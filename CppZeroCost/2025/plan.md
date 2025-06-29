@@ -145,11 +145,13 @@ ASLR:
 
 Автоматическая инициализация:
   - инициализация всех локальных переменных (нулями для hardening, случайными значениями для debug)
-  - виды атак:
-    * TODO: https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2023/p2723r1.html
+  - TODO: виды атак
   - эквивалентные отладочные проверки: Valgrind, Msan, [DirtyFrame](https://github.com/yugr/DirtyFrame)
   - TODO: история
-  - TODO: что будет в C++26 (`[[indeterminate]]`, [P2795](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2023/p2795r3.html#proposal))
+  - TODO: что будет в C++26:
+    * `[[indeterminate]]`
+    * [P2795](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2023/p2795r3.html#proposal))
+    * [P2723](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2023/p2723r1.html)
   - распространённость:
     * около 50 uninitialized variable CVE в 2024 (1% от buffer overflow CVE)
   - оверхед:
@@ -213,13 +215,11 @@ ASLR:
   - от них можно избавиться без ручной модификации Makefiles с помощью флагов `-Wl,--as-needed -Wl,--no-copy-dt-needed-entries`
   - обычно эти опции используют только для ускорения стартапа, но у них есть вторичный эффект:
     * уменьшается число доступных хакеру библиотек (для поиска гаджетов)
-  - TODO: классы обнаруживаемых атак (примеры ?)
-  - TODO: распространённость (анализ CVE)
-  - TODO: история (optional)
-  - TODO: эквивалентные отладочные проверки
-  - TODO: оверхед
-    * использовать один и тот же бенч
-    * процитировать известные результаты
+  - могут быть полезны против всех stack overflow атак, полагающихся на ROP
+  - классы атак (примеры ?): stack overflow, ROP programming
+  - распространённость (анализ CVE): те же что у неисполняемого стека
+  - эквивалентные отладочные проверки: те же что у неисполняемого стека
+  - оверхед: отсутствует
   - проблемы:
     * могут сломаться некоторые программы (например которые использовали символы отброшенных либ с помощью `dlsym`)
   - TODO: сравнение с безопасными языками
@@ -262,7 +262,6 @@ TODO:
   - `_FORTIFY_SOURCE`
   - Проверки STL, в т.ч. индексации и итераторов (`_GLIBCXX_ASSERTIONS` в GCC, `_LIBCPP_HARDENING_MODE` в Clang)
   - Отключение опасных оптимизаций (`-fno-delete-null-pointer-checks`, `-fno-strict-overflow`, `-fno-strict-aliasing`)
-  - `-Wl,--as-needed` (to reduce ROPs)
   - Проверки целочисленного переполнения (UBSan с minimal runtime)
   - Stack scrubbing (`-fstrub`)
   - `-fzero-call-used-regs` (https://www.semanticscholar.org/paper/Clean-the-Scratch-Registers%3A-A-Way-to-Mitigate-Rong-Xie/6f2ce4fd31baa0f6c02f9eb5c57b90d39fe5fa13)
@@ -271,7 +270,7 @@ TODO:
 
 Для каждой проверки:
   - суть
-  - классы обнаруживаемых атак (примеры ?)
+  - классы атак (примеры ?)
   - распространённость (анализ CVE)
   - история (optional)
   - эквивалентные отладочные проверки

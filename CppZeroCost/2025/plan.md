@@ -41,6 +41,7 @@ TODO:
 
 Time: 15 мин.
 Assignee: Юрий
+Effort: 11h
 
 Все утверждения ниже даны для этих версий дистров:
   - Debian GNU/Linux 11 (bullseye)

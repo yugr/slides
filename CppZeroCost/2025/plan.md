@@ -95,7 +95,6 @@ Effort: 13h
   - ссылка на хорошую статью
 
 TODO: добавить проверки:
-  - Отключение опасных оптимизаций (`-fno-delete-null-pointer-checks`, `-fno-strict-overflow`, `-fno-strict-aliasing`)
   - Проверки целочисленного переполнения (UBSan с minimal runtime)
   - `_FORTIFY_SOURCE`
   - Проверки STL, в т.ч. индексации и итераторов (`_GLIBCXX_ASSERTIONS` в GCC, `_LIBCPP_HARDENING_MODE` в Clang)
@@ -147,6 +146,16 @@ Heap overflow атаки:
       (например поменять адрес malloc hook и вызвать его при следующем malloc,
       House of Force)
 
+Распространённость buffer overflow-уязвимостей:
+  - ~11% CVE и 6.5% KEV в 2024 связаны с buffer overflow
+  - 20% из них это stack overflow (самые опасные)
+  - [Mitre CWE Top 25 2024](https://cwe.mitre.org/top25/archive/2024/2024_cwe_top25.html): места 2, 6, 8, 20
+  - [70% уязвимостей в продуктах MS - ошибки памяти](https://msrc.microsoft.com/blog/2019/07/a-proactive-approach-to-more-secure-code/)
+  - [70% high/critical ошибок в Chromium - ошибки памяти](https://www.chromium.org/Home/chromium-security/memory-safety/)
+  - важно однако понимать что многие критические уязвимости не связаны с памятью:
+    * Log4Shell (уязвимость в безопасном языке из-за исполнения произвольного кода)
+    * XZ Utils (социальная инженерия)
+
 ASLR:
   - случайное расположение частей программы в адресном пространстве
     * стек, куча, код библиотек
@@ -157,13 +166,7 @@ ASLR:
     * теперь ядро может перемещать сегмент кода при старте программы
   - существенно снизил вероятность атак return-to-libc и ROP
   - TODO: история
-  - классы атак и распространённость:
-    * ~11% CVE в 2024 связаны с buffer overflow
-    * 20% из них это stack overflow (самые опасные)
-    * TODO: Mitre CWE Top 25 2023
-    * TODO: MS report: https://msrc.microsoft.com/blog/2019/07/a-proactive-approach-to-more-secure-code/
-    * TODO: Chromium report: https://www.chromium.org/Home/chromium-security/memory-safety/
-    * TODO: CVEs in safe langs (Log4j) or social engineering (xz utils)
+  - TODO: классы атак и распространённость
   - эквивалентные отладочные проверки:
     * Valgrind и Asan обнаруживают причину подобных ошибок (buffer overflow)
   - проблемы:
@@ -196,11 +199,9 @@ ASLR:
     * первая hardening защита
     * впервые появились в OpenBSD (2003) и Windows (2004)
   - отключает возможность исполнения кода в сегменте стека на уровене OS
-  - TODO: пример ошибки
-  - классы атак и распространённость:
-    * ~11% CVE в 2024 связаны с buffer overflow
-    * 20% из них это stack overflow (самые опасные)
     * ликвидирует stack smashing атаки как класс
+  - TODO: пример ошибки
+  - TODO: классы атак и распространённость
   - эквивалентные отладочные проверки:
     * Valgrind и Asan обнаруживают причину подобных ошибок (buffer overflow)
   - проблемы:
@@ -292,7 +293,7 @@ ASLR:
       + см. [статью Ian Lance Taylor](https://www.airs.com/blog/archives/189)
     * потребовалась лишь небольшая адаптация для GOT
   - классы атак и распространённость: соответствующие CVE не найдены
-    * значительно более редкая атака чем buffer overflow, но вполне реальная:
+    * более редкая атака чем buffer overflow, но вполне реальная:
       + смещение GOT/PLT известно
       + хакер с помощью ROP может поменять их и сделать return-to-plt
   - эквивалентные отладочные проверки:
@@ -326,9 +327,7 @@ ASLR:
   - обычно эти опции используют только для ускорения стартапа, но у них есть вторичный эффект:
     * уменьшается число доступных хакеру библиотек (для поиска гаджетов)
   - могут быть полезны против всех stack overflow атак, полагающихся на ROP
-  - классы атак и распространённость (анализ CVE):
-    * те же атаки что у неисполняемого стека
-    * stack overflow, ROP programming
+  - TODO: классы атак и распространённость (анализ CVE):
   - эквивалентные отладочные проверки: те же что у неисполняемого стека
   - TODO: история
   - TODO: расширения
@@ -428,6 +427,46 @@ Stack clashing (aka stack probes):
     * https://developers.redhat.com/blog/2017/09/25/stack-clash-mitigation-gcc-background
     * https://developers.redhat.com/blog/2019/04/30/stack-clash-mitigation-in-gcc-why-fstack-check-is-not-the-answer
     * https://developers.redhat.com/blog/2020/05/22/stack-clash-mitigation-in-gcc-part-3
+
+Отключение агрессивных оптимизаций:
+  - некоторые оптимизации могут излишне агрессивно
+    реагировать на код, содержащий неочевидные для программиста ошибки,
+    и генерировать очень небезопасный ассемблер
+    (в основном выбрасывать пользовательские проверки)
+  - для кода с повышенными требованиями безопасности рекомендуется
+    отключать такие оптимизации
+  - пример из Linux kernel: компилятор удалил проверку на NULL:
+    ```
+    static void __devexit agnx_pci_remove (struct pci_dev *pdev)
+    {
+      struct ieee80211_hw *dev = pci_get_drvdata(pdev);
+      struct agnx_priv *priv = dev->priv;
+
+      if (!dev) return;
+
+      ... do stuff using dev ...
+    }
+    ```
+  - обычно отключают:
+    * `-fno-delete-null-pointer-checks`, `-fno-strict-overflow`, `-fno-strict-aliasing`
+  - TODO: классы атак и распространённость (анализ CVE)
+  - TODO: история (optional)
+  - TODO: возможные расширения
+  - эквивалентные отладочные проверки: UBsan/Isan (strict overflow), TySan (strict aliasing)
+    * ссылка на Ромин доклад
+  - TODO: оверхед
+    * процитировать известные результаты
+    * использовать один и тот же бенч
+  - сравнение с безопасными языками
+    * Rust:
+      + strict overflow всегда defined (паника или wrap around)
+      + strict aliasing невозможен по правилам языка
+      + TODO: что с нулевыми указателями ?
+  - как включить:
+    * флаги выключены по умолчанию во всех компиляторах и дистрибутивах
+      + многие пакеты в дистрах собираются с `-fno-strict-aliasing`
+        (т.к. правила алиасинга особенно легко нарушить)
+  - TODO: ссылка на хорошую статью
 
 `-fhardened`:
   - зонтичная опция для всех hardened-оптимизаций

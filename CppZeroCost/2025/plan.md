@@ -1,6 +1,7 @@
 # (0) Представление, введение в проблематику, план доклада
 
 Time: 3 мин.
+
 Assignee: Роман
 
 - почему safety & security сейчас так актуально для С++
@@ -16,6 +17,7 @@ Assignee: Роман
 # (1) Что такое hardening и в чем его принципиальное отличие от других средств отладки
 
 Time: 5 мин.
+
 Assignee: Роман
 
 - пример с некорректным выводом (`_FORTIFY_SOURCE`, проверки stl)
@@ -27,20 +29,26 @@ Assignee: Роман
   * замеры asan vs libc++ checks, `_FORTIFY_SOURCE`, stack protector vs normal
 
 TODO:
-  - в расширенном смысле харденинг = правила безопасной разработки + ограничения на деплой + проверки в рантайме (в компиляторе, библиотеках, ядре ОС)
-    * безопасная разработка:
-      +  `memset_s`, доп. варнинги, static analysis и т.п.
-      + варнинги: обычно `-Wall -Wformat -Werror` плюс несколько дополнительных
+  - обеспечение security и safety программной системы: интегральная активность
+    * [Linux Hardening Guide](https://madaidans-insecurities.github.io/guides/linux-hardening.html)
+  - в расширенном смысле харденинг - интегральная активность: правила безопасной разработки + ограничения на деплой + проверки в рантайме (в компиляторе, библиотеках, ядре ОС)
+    * правила безопасной разработки (и тестирования):
+      + допустимые API (запрет `gets`, предпочтение `memset_s` и т.п.)
+      + static analysis (в т.ч. обязательные варнинги например `-Wall -Wformat -Werror`, контракты)
+      + доп. проверки (asserts, контракты и т.п.)
     * безопасный деплой:
       + не поставлять программу с отладочной информацией (использовать separate debug info) или символьной таблицей
       + скрыть приватные символы из динамической таблицы символов
     * мы в докладе рассматриваем ТОЛЬКО рантайм-проверки в тулчейне (т.е. компиляторе и стд. библиотеках)
+      + mitigation, не prevention
   - требования к харденинг: низкий оверхед + высокая точность (low false positive rate)
 
 # (2) Исчерпывающее перечисление: stack protector, pie, cfi, minimal ubsan, fortify, etc.
 
 Time: 15 мин.
+
 Assignee: Юрий
+
 Effort: 13h
 
 ## Методология
@@ -57,10 +65,10 @@ Effort: 13h
     * пакетные флаги: https://rpmfind.net/linux/rpm2html/search.php?query=redhat-rpm-config
       + [Changes/Harden All Packages](https://fedoraproject.org/wiki/Changes/Harden_All_Packages)
   - TODO: RedHat, BSDs ?
-  - TODO: почитать https://en.m.wikipedia.org/wiki/Buffer_overflow_protection#GNU_Compiler_Collection_(GCC)
 
 Сравнение с другими языками:
-  - только Rust, т.к. в Java основную роль играет динамический код
+  - рассматриваем только статические языки (не JIT)
+  - Rust
   - TODO: Ada ?
 
 Для каждой проверки нужно описать
@@ -73,7 +81,7 @@ Effort: 13h
   - оверхед
     * процитировать известные результаты
     * использовать один и тот же бенч
-  - проблемы
+  - проблемы (false positives и false negatives)
   - сравнение с безопасными языками
     * Rust
     * возможно Java
@@ -86,12 +94,13 @@ Effort: 13h
       + проверить по https://github.com/jvoisin/compiler-flags-distro
   - ссылка на хорошую статью
 
-TODO:
+TODO: добавить проверки:
   - Отключение опасных оптимизаций (`-fno-delete-null-pointer-checks`, `-fno-strict-overflow`, `-fno-strict-aliasing`)
   - Проверки целочисленного переполнения (UBSan с minimal runtime)
   - `_FORTIFY_SOURCE`
   - Проверки STL, в т.ч. индексации и итераторов (`_GLIBCXX_ASSERTIONS` в GCC, `_LIBCPP_HARDENING_MODE` в Clang)
   - `-fsanitize=safe-stack` (разные стеки, также Intel Safe Stack (часть Intel CET))
+  - `-fsanitize=shadow-call-stack`
   - CFI (ARM PAC, Intel CET)
     * verify static and dynamic types match
     * also checks for dynamic types for vcalls, C++ casts, etc.
@@ -99,16 +108,29 @@ TODO:
     * проблемы при немонолитное иерархии (дети в других dso), нужна спец опция и перф оверхед)
     * новые аппаратные проверки (ARM PAC, ARM BTI ~ Intel IBT (часть Intel CET))
       + включаются по `-mbranch-protection`
+    * also `-fcf-protection`
   - Stack scrubbing (`-fstrub`)
   - `-fzero-call-used-regs` (https://www.semanticscholar.org/paper/Clean-the-Scratch-Registers%3A-A-Way-to-Mitigate-Rong-Xie/6f2ce4fd31baa0f6c02f9eb5c57b90d39fe5fa13)
-  - [Scudo allocator](https://llvm.org/docs/ScudoHardenedAllocator.html)
+  - hardened allocator:
+    * [Scudo allocator](https://llvm.org/docs/ScudoHardenedAllocator.html)
+    * Musl allocator
+    * Glibc: pointer obfuscation, Heap Protector
   - другие фичи [отсюда](https://fedoraproject.org/wiki/Security_Features_Matrix)
+
+TODO: прочитать:
+  - https://fedoraproject.org/wiki/Security_Features_Matrix
+  - https://wiki.debian.org/HardeningWalkthrough#Selecting_security_hardening_options
+  - https://wiki.ubuntu.com/Security/Features
+  - https://wiki.gentoo.org/wiki/Project:Hardened
+  - https://github.com/rust-lang/rust/issues/15179
+  - примеры атак: https://guyinatuxedo.github.io
 
 ## Основной контент
 
-Buffer overflow атаки (в хронологическом порядке):
+Stack buffer overflow атаки (в хронологическом порядке):
   - stack smashing
-    * запись кода в стек и вызов через return
+    * Smashing The Stack For Fun And Profit (Aleph One)
+    * запись шеллкода в стек и вызов через return
     * неактуальна из-за noexecstack, W^X, etc.
   - return-to-libc
     * вызов стандартной функции типа `system(3)` через return
@@ -117,7 +139,13 @@ Buffer overflow атаки (в хронологическом порядке):
     * для amd64 нужны гаджеты (ROP)
   - return-oriented programming
     * state-of-the-art, наиболее актуальная проблема
-  - TODO: посмотреть атаки в https://www.ctfrecipes.com/pwn/stack-exploitation
+
+Heap overflow атаки:
+  - более сложные и разнообразные:
+    * испортить данные в несвязанном буфере (например указатели на функции)
+    * поменять метаданные аллокатора, чтобы заставить его менять произвольные адреса
+      (например поменять адрес malloc hook и вызвать его при следующем malloc,
+      House of Force)
 
 ASLR:
   - случайное расположение частей программы в адресном пространстве
@@ -133,10 +161,13 @@ ASLR:
     * ~11% CVE в 2024 связаны с buffer overflow
     * 20% из них это stack overflow (самые опасные)
     * TODO: Mitre CWE Top 25 2023
+    * TODO: MS report: https://msrc.microsoft.com/blog/2019/07/a-proactive-approach-to-more-secure-code/
+    * TODO: Chromium report: https://www.chromium.org/Home/chromium-security/memory-safety/
     * TODO: CVEs in safe langs (Log4j) or social engineering (xz utils)
   - эквивалентные отладочные проверки:
     * Valgrind и Asan обнаруживают причину подобных ошибок (buffer overflow)
   - проблемы:
+    * TODO: FP и FN
     * статические данные не рандомизируются (только базовый адрес приложения) => хакер знает смещение GOT и PLT таблиц и может атаковать их
       + см. про защиту GOT ниже
     * ASLR убила подход предлинковки библиотек (Prelink), который использовался для ускорения загрузки
@@ -173,6 +204,7 @@ ASLR:
   - эквивалентные отладочные проверки:
     * Valgrind и Asan обнаруживают причину подобных ошибок (buffer overflow)
   - проблемы:
+    * TODO: FP и FN
     * обойти защиту никак нельзя
     * работает только если все DSO в программе слинкованы без исполняемого стека
       + лучше всегда проверять все executables и libraries:
@@ -233,6 +265,7 @@ ASLR:
       + [Chrome](https://issues.chromium.org/issues/40633061#comment142)
     * TODO: померять дефолтный бенч
   - проблемы
+    * TODO: FP и FN
     * существенный оверхед
     * ломает обнаружение багов в Valgrind и Msan
     * инициализация нулями не всегда даёт осмысленный результат (мы скорее скрываем проблему, а не фиксим)
@@ -268,6 +301,7 @@ ASLR:
     * известные результаты не найдены
     * TODO: померять дефолтный бенч
   - проблемы:
+    * TODO: FP и FN
     * замедленное время стартапа (на разрешение символов)
     * некоторые программы могут сломаться (если в них были отсутствующие символы, которые не вызывались)
     * пользовательские таблицы функций не защищены (важно ли это ?)
@@ -300,6 +334,7 @@ ASLR:
   - TODO: расширения
   - оверхед: отсутствует (наоборот, стартап может ускориться)
   - проблемы:
+    * TODO: FP и FN
     * могут сломаться некоторые программы
       + например которые использовали символы отброшенных либ с помощью `dlsym`
   - сравнение с безопасными языками
@@ -346,6 +381,7 @@ Stack protector:
       + [`-fstack-protector-strong` no overhead](https://zatoichi-engineer.github.io/2017/10/04/stack-smashing-protection.html)
     * TODO: померять дефолтный бенч
   - проблемы
+    * TODO: FP и FN
     * уязвим к info leakage (если канарейка утекла, то защита неэффективна)
     * если канарейка хранится в том же сегменте что и стек, хакер может переписать и её
     * не защищает от переписывания указателей на функции на стеке
@@ -366,7 +402,8 @@ Stack clashing (aka stack probes):
   - различные стеки и куча отделены друга от друга guard pages
     * незамапленными страницы, обращение к которым вызовет SEGV
     * ожидается что программа обратится к адреса на странице
-      при создании стекового фрейма и stack overflow будет обнаружен
+      при создании стекового фрейма и исчерпание стека
+      (stack overflow, не stack buffer overflow) будет обнаружено
     * но что если на фрейме дежит очень большой (>4096 байтов) массив и
       мы как бы перепрыгиваем guard page ?
     * идея пройти по всему фрейму с шагом 4096 перед началом работы,
@@ -379,7 +416,7 @@ Stack clashing (aka stack probes):
   - оверхед
     * [нет регрессий на Firefox](https://blog.llvm.org/posts/2021-01-05-stack-clash-protection/)
     * TODO: померять дефолтный бенч
-  - TODO: проблемы
+  - TODO: проблемы (FP и FN)
   - сравнение с безопасными языками
     * в Rust stack probing включён по умолчанию (по крайней мере на x86)
   - как включить
@@ -406,6 +443,7 @@ Stack clashing (aka stack probes):
 # (3) Hardening под капотом на примере LLVM
 
 Time: 10 мин.
+
 Assignee: Роман
 
 - `_FORTIFY_SOURCE`
@@ -419,6 +457,8 @@ Assignee: Роман
 # (4) Дальнейшее развитие hardening
 
 Time: 7 мин.
+
+Assignee: Роман
 
 - отход от бескомпромиссного требования zero-cost abstractions
 - перспектива существующих hardening-практик в Стандарте языка

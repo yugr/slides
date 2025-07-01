@@ -41,17 +41,70 @@ TODO:
 
 Time: 15 мин.
 Assignee: Юрий
-Effort: 11h
+Effort: 13h
 
-Все утверждения ниже даны для этих версий дистров:
-  - Debian GNU/Linux 11 (bullseye)
-  - Ubuntu 22.04
-  - Fedora 39
-  - TODO: проверить на последних ?
-  - TODO: RedHat ?
-  - TODO: BSDs ?
+## Методология
 
-Сравниваемся только с Rust, т.к. в Java основную роль играет динамический код.
+Все утверждения ниже даны для последних версий дистров:
+  - Debian 12 (bookworm)
+    * [Debian](https://wiki.debian.org/HardeningWalkthrough#Selecting_security_hardening_options)
+    * пакетные флаги можно посмотреть, вызвав `dpkg-buildflags(1)`
+  - Ubuntu 24.04 (noble)
+    * [Ubuntu](https://wiki.ubuntu.com/Security/Features)
+    * [дефолтные компиляторные флаги](https://wiki.ubuntu.com/ToolChain/CompilerFlags)
+  - Fedora 42
+    * [Fedora](https://fedoraproject.org/wiki/Security_Features_Matrix)
+    * пакетные флаги: https://rpmfind.net/linux/rpm2html/search.php?query=redhat-rpm-config
+      + [Changes/Harden All Packages](https://fedoraproject.org/wiki/Changes/Harden_All_Packages)
+  - TODO: RedHat, BSDs ?
+  - TODO: почитать https://en.m.wikipedia.org/wiki/Buffer_overflow_protection#GNU_Compiler_Collection_(GCC)
+
+Сравнение с другими языками:
+  - только Rust, т.к. в Java основную роль играет динамический код
+  - TODO: Ada ?
+
+Для каждой проверки нужно описать
+  - суть
+  - пример ошибки
+  - классы атак и распространённость (анализ CVE)
+  - история (optional)
+  - возможные расширения
+  - эквивалентные отладочные проверки
+  - оверхед
+    * процитировать известные результаты
+    * использовать один и тот же бенч
+  - проблемы
+  - сравнение с безопасными языками
+    * Rust
+    * возможно Java
+  - как включить
+    * опции и макросы компилятора с подробным пояснением и примерами
+    * ограничения на динамическую линковку
+    * поддержка в дистрибутивах и тулчейнах
+      + что включено по умолчанию (PIE, `_FORTIFY_SOURCE`, `-Wl,-z,now`, `-Wl,-z,relro`, etc.)
+      + что включено для пакетов дистра и что в компиляторе (и в GCC, и в Clang)
+      + проверить по https://github.com/jvoisin/compiler-flags-distro
+  - ссылка на хорошую статью
+
+TODO:
+  - Отключение опасных оптимизаций (`-fno-delete-null-pointer-checks`, `-fno-strict-overflow`, `-fno-strict-aliasing`)
+  - Проверки целочисленного переполнения (UBSan с minimal runtime)
+  - `_FORTIFY_SOURCE`
+  - Проверки STL, в т.ч. индексации и итераторов (`_GLIBCXX_ASSERTIONS` в GCC, `_LIBCPP_HARDENING_MODE` в Clang)
+  - `-fsanitize=safe-stack` (разные стеки, также Intel Safe Stack (часть Intel CET))
+  - CFI (ARM PAC, Intel CET)
+    * verify static and dynamic types match
+    * also checks for dynamic types for vcalls, C++ casts, etc.
+    * компиляторная инструментация
+    * проблемы при немонолитное иерархии (дети в других dso), нужна спец опция и перф оверхед)
+    * новые аппаратные проверки (ARM PAC, ARM BTI ~ Intel IBT (часть Intel CET))
+      + включаются по `-mbranch-protection`
+  - Stack scrubbing (`-fstrub`)
+  - `-fzero-call-used-regs` (https://www.semanticscholar.org/paper/Clean-the-Scratch-Registers%3A-A-Way-to-Mitigate-Rong-Xie/6f2ce4fd31baa0f6c02f9eb5c57b90d39fe5fa13)
+  - [Scudo allocator](https://llvm.org/docs/ScudoHardenedAllocator.html)
+  - другие фичи [отсюда](https://fedoraproject.org/wiki/Security_Features_Matrix)
+
+## Основной контент
 
 Buffer overflow атаки (в хронологическом порядке):
   - stack smashing
@@ -100,9 +153,12 @@ ASLR:
   - сравнение с безопасными языками:
     * та же техника используется в Rust
   - как включить:
-    * опция `-fPIE` (GCC, Clang), `/DYNAMICBASE` (Visual Studio)
-    * включена по умолчанию в GCC/Clang в современных дистрибутивах (Ubuntu/Debian, Fedora, Gentoo)
+    * флаги `-fPIE -pie` (GCC, Clang), `/DYNAMICBASE` (Visual Studio)
+    * включена по умолчанию в GCC/Clang в Ubuntu/Debian
       + можно отключить флагом `-no-pie`
+    * не включена по умолчанию в компиляторах Fedora
+      + можно включить флагами `-fPIE -pie`
+      + пакеты дефолтно собираются с ними
 
 Неисполняемый стек:
   - aka W^X, aka NX bit, aka Data Execution Prevention
@@ -220,10 +276,10 @@ ASLR:
   - как включить
     * указать опции линкера: `-Wl,-z,now -Wl,-z,relro`
     * поддержка в дистрибутивах и тулчейнах:
-      + Debian: не включены по умолчанию ни в GCC, ни в Clang (пакеты дефолтно видимо [собираются с partial RELRO](https://wiki.debian.org/HardeningWalkthrough#Selecting_security_hardening_options))
+      + Debian: не включены по умолчанию ни в GCC, ни в Clang
+        - пакеты дефолтно [собираются с partial RELRO](https://wiki.debian.org/HardeningWalkthrough#Selecting_security_hardening_options)
       + Ubuntu: включены по умолчанию в GCC, но только `-z relro` в Clang (partial RELRO)
-      + Fedora: не включены по умолчанию ни в GCC, ни в Clang (но пакеты дефолтно [собираются с RELRO](https://fedoraproject.org/wiki/Security_Features_Matrix#Built_with_RELRO), правда непонятно full или partial)
-      + что включено по умолчанию (PIE, `_FORTIFY_SOURCE`, `-Wl,-z,now`, `-Wl,-z,relro`, etc.)
+      + Fedora: не включены по умолчанию ни в GCC, ни в Clang (но пакеты дефолтно [собираются с full RELRO](https://fedoraproject.org/wiki/Security_Features_Matrix#Built_with_RELRO))
   - ссылка на статью:
     * https://www.redhat.com/en/blog/hardening-elf-binaries-using-relocation-read-only-relro
 
@@ -251,7 +307,7 @@ ASLR:
   - как включить
     * опция линкера `-Wl,--as-needed`
     * включена по умолчанию в GCC в Debian и Ubuntu, но не в Fedora
-      + TODO: что с дефолтной сборкой пакетов в Fedora ?
+      + пакеты в Fedora дефолтно собираются с `--as-needed`
     * не включена по умолчанию в Clang нигде
   - ссылка на хорошую статью: https://wiki.gentoo.org/wiki/Project:Quality_Assurance/As-needed
 
@@ -300,9 +356,8 @@ Stack protector:
           но по дефолту [отключена](https://github.com/rust-lang/compiler-team/issues/841)
   - кaк включить:
     * флаг `-fstack-protector-strong` (GCC, Clang), `/GS` (Visual Studio)
-    * включена по умолчанию в GCC в Ubuntu, но не в других дистрах
-      + TODO: что с дефолтной сборкой пакетов в Debian и Fedora ?
-    * в Clang не включена по умолчанию нигде
+    * включена по умолчанию в Ubuntu GCC и больше нигде
+      + пакеты в Debian и Fedora дефолтно собираются с `-fstack-protector-strong`
   - ссылки на статьи:
     * https://wiki.osdev.org/Stack_Smashing_Protector
     * https://www.redhat.com/en/blog/security-technologies-stack-smashing-protection-stackguard
@@ -328,8 +383,10 @@ Stack clashing (aka stack probes):
   - сравнение с безопасными языками
     * в Rust stack probing включён по умолчанию (по крайней мере на x86)
   - как включить
-    * два флага: `-fstack-clash-protection` и устаревший `-fstack-check`
-    * не включены по умолчанию в дистрах
+    * `-fstack-clash-protection` (ещё есть устаревший и неиспользуемый `-fstack-check`)
+    * включены по умолчанию в Ubuntu GCC и больше нигде
+      + пакеты Fedora дефолтно собираются с `-fstack-clash-protection`
+      + пакеты Debian [похоже](https://github.com/jvoisin/compiler-flags-distro/issues/12) собираются пока без этого флага
   - ссылки на статьи:
     * https://developers.redhat.com/blog/2017/09/25/stack-clash-mitigation-gcc-background
     * https://developers.redhat.com/blog/2019/04/30/stack-clash-mitigation-in-gcc-why-fstack-check-is-not-the-answer
@@ -345,51 +402,6 @@ Stack clashing (aka stack probes):
         ```
         -D_FORTIFY_SOURCE=3 -D_GLIBCXX_ASSERTIONS -ftrivial-auto-var-init=zero -fPIE -Wl,-z,now -Wl,-z,relro -fstack-protector-strong -fstack-clash-protection -fcf-protection=full
         ```
-
-TODO:
-  - Отключение опасных оптимизаций (`-fno-delete-null-pointer-checks`, `-fno-strict-overflow`, `-fno-strict-aliasing`)
-  - Проверки целочисленного переполнения (UBSan с minimal runtime)
-  - `_FORTIFY_SOURCE`
-  - Проверки STL, в т.ч. индексации и итераторов (`_GLIBCXX_ASSERTIONS` в GCC, `_LIBCPP_HARDENING_MODE` в Clang)
-  - `-fsanitize=safe-stack` (разные стеки, также Intel Safe Stack (часть Intel CET))
-  - CFI (ARM PAC, Intel CET)
-    * verify static and dynamic types match
-    * also checks for dynamic types for vcalls, C++ casts, etc.
-    * компиляторная инструментация
-    * проблемы при немонолитное иерархии (дети в других dso), нужна спец опция и перф оверхед)
-    * новые аппаратные проверки (ARM PAC, ARM BTI ~ Intel IBT (часть Intel CET))
-      + включаются по `-mbranch-protection`
-  - Stack scrubbing (`-fstrub`)
-  - `-fzero-call-used-regs` (https://www.semanticscholar.org/paper/Clean-the-Scratch-Registers%3A-A-Way-to-Mitigate-Rong-Xie/6f2ce4fd31baa0f6c02f9eb5c57b90d39fe5fa13)
-  - [Scudo allocator](https://llvm.org/docs/ScudoHardenedAllocator.html)
-  - другие фичи [отсюда](https://fedoraproject.org/wiki/Security_Features_Matrix)
-
-Для каждой проверки:
-  - суть
-  - пример ошибки
-  - классы атак и распространённость (анализ CVE)
-  - история (optional)
-  - возможные расширения
-  - эквивалентные отладочные проверки
-  - оверхед
-    * процитировать известные результаты
-    * использовать один и тот же бенч
-  - проблемы
-  - сравнение с безопасными языками
-    * Rust
-    * возможно Java
-  - как включить
-    * опции и макросы компилятора с подробным пояснением и примерами
-    * ограничения на динамическую линковку
-    * поддержка в дистрибутивах и тулчейнах
-      + что включено по умолчанию (PIE, `_FORTIFY_SOURCE`, `-Wl,-z,now`, `-Wl,-z,relro`, etc.)
-      + что включено для пакетов дистра и что в компиляторе (и в GCC, и в Clang)
-      + см. про дистры в
-        - [Fedora](https://fedoraproject.org/wiki/Security_Features_Matrix)
-        - [Debian](https://wiki.debian.org/HardeningWalkthrough#Selecting_security_hardening_options)
-        - [Ubuntu](https://wiki.ubuntu.com/Security/Features)
-        - https://en.m.wikipedia.org/wiki/Buffer_overflow_protection#GNU_Compiler_Collection_(GCC)
-  - ссылка на хорошую статью
 
 # (3) Hardening под капотом на примере LLVM
 

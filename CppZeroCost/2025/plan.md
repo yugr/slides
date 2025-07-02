@@ -34,7 +34,7 @@ TODO:
   - в расширенном смысле харденинг - интегральная активность: правила безопасной разработки + ограничения на деплой + проверки в рантайме (в компиляторе, библиотеках, ядре ОС)
     * правила безопасной разработки (и тестирования):
       + допустимые API (запрет `gets`, предпочтение `memset_s` и т.п.)
-      + static analysis (в т.ч. обязательные варнинги например `-Wall -Wformat -Werror`, контракты)
+      + static analysis (в т.ч. обязательные варнинги помимо стандартных `-Wall -Wextra -Werror`, например `-Wformat=2 -Wconversion=2`, контракты)
       + доп. проверки (asserts, контракты и т.п.)
     * безопасный деплой:
       + не поставлять программу с отладочной информацией (использовать separate debug info) или символьной таблицей
@@ -74,17 +74,19 @@ Effort: 13h
 Для каждой проверки нужно описать
   - суть
   - пример ошибки
-  - классы атак и распространённость (анализ CVE)
+  - классы атак и распространённость (анализ CVE/KVE)
   - история (optional)
   - возможные расширения
   - эквивалентные отладочные проверки
   - оверхед
     * процитировать известные результаты
     * использовать один и тот же бенч
-  - проблемы (false positives и false negatives)
+  - проблемы:
+    * false positives и false negatives (искать "bypassing FEATURE")
+    * поддержка динамических библиотек
+    * поддержка на разных платформах
   - сравнение с безопасными языками
     * Rust
-    * возможно Java
   - как включить
     * опции и макросы компилятора с подробным пояснением и примерами
     * ограничения на динамическую линковку
@@ -93,13 +95,12 @@ Effort: 13h
       + что включено для пакетов дистра и что в компиляторе (и в GCC, и в Clang)
       + проверить по https://github.com/jvoisin/compiler-flags-distro
   - ссылка на хорошую статью
+  - TODO: использование в open-source проектах (как собрать статистику ?)
 
 TODO: добавить проверки:
-  - Проверки целочисленного переполнения (UBSan с minimal runtime)
   - `_FORTIFY_SOURCE`
+    * https://www.redhat.com/en/blog/security-technologies-fortifysource
   - Проверки STL, в т.ч. индексации и итераторов (`_GLIBCXX_ASSERTIONS` в GCC, `_LIBCPP_HARDENING_MODE` в Clang)
-  - `-fsanitize=safe-stack` (разные стеки, также Intel Safe Stack (часть Intel CET))
-  - `-fsanitize=shadow-call-stack`
   - CFI (ARM PAC, Intel CET)
     * verify static and dynamic types match
     * also checks for dynamic types for vcalls, C++ casts, etc.
@@ -107,14 +108,13 @@ TODO: добавить проверки:
     * проблемы при немонолитное иерархии (дети в других dso), нужна спец опция и перф оверхед)
     * новые аппаратные проверки (ARM PAC, ARM BTI ~ Intel IBT (часть Intel CET))
       + включаются по `-mbranch-protection`
-    * also `-fcf-protection`
+    * also `-fcf-protection` and https://learn.microsoft.com/en-us/windows/win32/secbp/control-flow-guard
   - Stack scrubbing (`-fstrub`)
   - `-fzero-call-used-regs` (https://www.semanticscholar.org/paper/Clean-the-Scratch-Registers%3A-A-Way-to-Mitigate-Rong-Xie/6f2ce4fd31baa0f6c02f9eb5c57b90d39fe5fa13)
   - hardened allocator:
     * [Scudo allocator](https://llvm.org/docs/ScudoHardenedAllocator.html)
     * Musl allocator
     * Glibc: pointer obfuscation, Heap Protector
-  - другие фичи [отсюда](https://fedoraproject.org/wiki/Security_Features_Matrix)
 
 TODO: прочитать:
   - https://fedoraproject.org/wiki/Security_Features_Matrix
@@ -123,6 +123,7 @@ TODO: прочитать:
   - https://wiki.gentoo.org/wiki/Project:Hardened
   - https://github.com/rust-lang/rust/issues/15179
   - примеры атак: https://guyinatuxedo.github.io
+  - https://www.reddit.com/r/cpp/comments/1bafd7b/compiler_options_hardening_guide_for_c_and_c/
 
 ## Основной контент
 
@@ -147,7 +148,7 @@ Heap overflow атаки:
       House of Force)
 
 Распространённость buffer overflow-уязвимостей:
-  - ~11% CVE и 6.5% KEV в 2024 связаны с buffer overflow
+  - ~11% CVE и 6.5% KEV в 2024
   - 20% из них это stack overflow (самые опасные)
   - [Mitre CWE Top 25 2024](https://cwe.mitre.org/top25/archive/2024/2024_cwe_top25.html): места 2, 6, 8, 20
   - [70% уязвимостей в продуктах MS - ошибки памяти](https://msrc.microsoft.com/blog/2019/07/a-proactive-approach-to-more-secure-code/)
@@ -155,6 +156,10 @@ Heap overflow атаки:
   - важно однако понимать что многие критические уязвимости не связаны с памятью:
     * Log4Shell (уязвимость в безопасном языке из-за исполнения произвольного кода)
     * XZ Utils (социальная инженерия)
+
+Распространённость integer overflow-уязвимостей:
+  - ~1% CVE и 1.5% KEV в 2024
+  - [Mitre CWE Top 25 2024](https://cwe.mitre.org/top25/archive/2024/2024_cwe_top25.html): место 23
 
 ASLR:
   - случайное расположение частей программы в адресном пространстве
@@ -429,10 +434,13 @@ Stack clashing (aka stack probes):
     * https://developers.redhat.com/blog/2020/05/22/stack-clash-mitigation-in-gcc-part-3
 
 Отключение агрессивных оптимизаций:
-  - некоторые оптимизации могут излишне агрессивно
+  - некоторые компиляторы могут излишне агрессивно
     реагировать на код, содержащий неочевидные для программиста ошибки,
     и генерировать очень небезопасный ассемблер
     (в основном выбрасывать пользовательские проверки)
+  - Compiler Introduced Security Bugs
+    * термин введён в статье "Silent Bugs Matter: A Study of Compiler-Introduced Security Bugs"
+    * статья "Towards Optimization-Safe Systems: Analyzing the Impact of Undefined Behavior"
   - для кода с повышенными требованиями безопасности рекомендуется
     отключать такие оптимизации
   - пример из Linux kernel: компилятор удалил проверку на NULL:
@@ -447,26 +455,111 @@ Stack clashing (aka stack probes):
       ... do stuff using dev ...
     }
     ```
+  - Visual Studio [менее агрессивен](https://devblogs.microsoft.com/cppblog/new-code-optimizer/)
+    чем GCC/Clang
   - обычно отключают:
-    * `-fno-delete-null-pointer-checks`, `-fno-strict-overflow`, `-fno-strict-aliasing`
-  - TODO: классы атак и распространённость (анализ CVE)
+    * `-fno-delete-null-pointer-checks`, `-fno-strict-overflow`, `-fno-strict-aliasing` (GCC/Clang)
+    * [`d2SSAOptimizerUndefinedIntOverflow-`](https://devblogs.microsoft.com/cppblog/new-code-optimizer/) (Visual Studio)
+  - классы атак и распространённость:
+    * CVE по этой фиче очень мало (например [CVE-2009-1897](https://nvd.nist.gov/vuln/detail/CVE-2009-1897)),
+      но в статьях находят сотни CISB в open-source коде:
+      + "Silent Bugs Matter: A Study of Compiler-Introduced Security Bugs"
+      + "Towards Optimization-Safe Systems: Analyzing the Impact of Undefined Behavior"
   - TODO: история (optional)
-  - TODO: возможные расширения
+  - возможные расширения:
+    * иногда рекомендуют флаг `-fwrapv`, но он плохо поддерживается
+      (баги [не фиксят десятилетиями](https://gcc.gnu.org/bugzilla/show_bug.cgi?id=30484))
   - эквивалентные отладочные проверки: UBsan/Isan (strict overflow), TySan (strict aliasing)
     * ссылка на Ромин доклад
-  - TODO: оверхед
-    * процитировать известные результаты
-    * использовать один и тот же бенч
+  - оверхед
+    * известные результаты:
+      + [3-10% performance loss due to `-fno-strict-aliasing`](https://docs.lib.purdue.edu/cgi/viewcontent.cgi?article=1124&context=ecetr) (очень старое исследование)
+      + [слабое отрицательное влияние `-fno-strict-aliasing`](https://llvm.org/devmtg/2023-05/slides/Posters/05-Popescu-PerformanceImpactOfExploitingUndefinedBehavior.pdf)
+    * TODO: использовать один и тот же бенч
   - сравнение с безопасными языками
     * Rust:
       + strict overflow всегда defined (паника или wrap around)
       + strict aliasing невозможен по правилам языка
-      + TODO: что с нулевыми указателями ?
+      + нулевые указатели невозможны в safe-коде
   - как включить:
     * флаги выключены по умолчанию во всех компиляторах и дистрибутивах
       + многие пакеты в дистрах собираются с `-fno-strict-aliasing`
         (т.к. правила алиасинга особенно легко нарушить)
+  - ссылки на статьи:
+    * [обсуждение `-fwrapv` в Firefox](https://bugzilla.mozilla.org/show_bug.cgi?id=1031653)
+    * [Security flaws caused by compiler optimizations](https://www.redhat.com/en/blog/security-flaws-caused-compiler-optimizations)
+
+Проверки целочисленного переполнения:
+  - суть проверки:
+    * существующие отладочные инструменты для проверки переполнения
+      (UBsan и Isan) имеют достаточно низкий оверхед
+    * их использование в проде затруднено, т.к. они используют
+      большой рантайм, открывающий новые возможности для атаки
+    * решение: использование "Ubsan minimal runtime"
+      (немедленный аборт программы)
+    * используется Android media stack:
+      + https://android-developers.googleblog.com/2016/05/hardening-media-stack.html
+      + https://android-developers.googleblog.com/2018/06/compiler-based-security-mitigations-in.html
+  - TODO: пример ошибки
+  - TODO: классы атак и распространённость (анализ CVE/KVE):
+    * CVE/KVE по integer overflow достаточно мало
+    * два канонических примера: инцидент с облучателем Therac-25 и катастрофа ракеты Ariane 5
+  - TODO: история (optional)
+  - возможные расширения
+    * помимо UBsan рекомендуется включать Isan (надо будет отключить инструментацию в STL RNG,
+      там ест intentional unsigned overflow)
+    * `-ftrapv`
+  - эквивалентные отладочные проверки:
+    * UBsan/Isan может использоваться и как отладочный инструмент
+  - оверхед:
+    * [до 50% на SPEC](https://arxiv.org/pdf/1711.08108)
+    * TODO: померять дефолтный бенч
+  - TODO: проблемы (false positives и false negatives)
+  - сравнение с безопасными языками:
+    * в Rust проверки признаны достаточно дорогоми и редкими,
+      поэтому по умолчанию они отключены в release;
+      более того, некоторые операции (например приведения типов)
+      вообще не проверяются
+    * в Swift проверки переполнения включены по умолчанию
+  - как включить
+    * Clang: `-fsanitize=undefined -fsanitize-minimal-runtime` (рекомендую также добавлять `integer`)
+    * GCC: `-fsanitize-trap=undefined` (`integer` не поддержан в GCC)
   - TODO: ссылка на хорошую статью
+
+Разделение стеков:
+  - суть проверки:
+    * основная проблема stack buffer overflow -
+      адрес возврата хранится вместе с локальными массивами
+    * мы можем разделить стек на две несвязные части:
+      + адрес возврата (и возможно скалярные переменные, адрес которых не берётся)
+      + все остальные
+    * по сути это доп. улучшение StackProtector
+    * полная защита от stack buffer overflow + дополнительная рандомизация
+      для критических данных
+  - TODO: пример ошибки
+  - TODO: классы атак и распространённость (анализ CVE/KVE)
+  - TODO: история (optional)
+  - TODO: возможные расширения
+  - TODO: эквивалентные отладочные проверки
+  - оверхед:
+    * [0.1% SafeStack](https://clang.llvm.org/docs/SafeStack.html)
+    * TODO: померять дефолтный бенч
+  - проблемы:
+    * TODO: false positives
+    * false negatives: https://www.blackhat.com/docs/eu-16/materials/eu-16-Goktas-Bypassing-Clangs-SafeStack.pdf
+    * SafeStack не поддерживает динамические библиотеки
+      + TODO: как его вообще можно использовать в таком случае ?
+    * ShadowCallStack: только AArch64 и RISCV
+    * TODO: поддержка динамических библиотек
+  - TODO: сравнение с безопасными языками
+    * Rust
+  - как включить:
+    * несколько реализаций:
+      + SafeStack (`-fsanitize=safe-stack`) - не меняет ABI
+      + ShadowCallStack (`-fsanitize=shadow-call-stack` в GCC/Clang) - меняет ABI
+      + а также RetGuard, Intel CET, etc.
+  - ссылка на статью:
+    * https://blog.includesecurity.com/2015/11/strengths-and-weaknesses-of-llvms-safestack-buffer-overflow-protection/
 
 `-fhardened`:
   - зонтичная опция для всех hardened-оптимизаций

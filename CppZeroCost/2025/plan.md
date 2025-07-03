@@ -580,15 +580,15 @@ Stack clashing (aka stack probes):
       (там где это возможно):
     * например в стандартных хедере Glibc можно увидеть что-то типа
       ```
-     #if _FORTIFY_SOURCE > 0
+      #if _FORTIFY_SOURCE > 0
       __attribute__((always_inline, __nothrow__, leaf)) void *
-     memset (void *__dest, int __ch, size_t __len)
-     {
-        return __builtin___memset_chk (__dest, __ch, __len,
-                                       __glibc_objsize0 (__dest));
-     }
-     #endif
-    ```
+      memset (void *__dest, int __ch, size_t __len)
+      {
+         return __builtin___memset_chk (__dest, __ch, __len,
+                                        __glibc_objsize0 (__dest));
+      }
+      #endif
+      ```
     * в этом коде функция `memset_chk` определена в стандартной библиотеке
       и содержит проверку диапазона
     * интересный момент с макросом `__glibc_objsize0`: он определяется в два разных

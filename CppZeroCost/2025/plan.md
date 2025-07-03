@@ -658,7 +658,7 @@ Heap overflow атаки:
   * [Google Andromeda <1% with FDO and 2.5% without](https://bughunters.google.com/blog/6368559657254912/llvm-s-rfc-c-buffer-hardening-at-google)
   * включена для пакетов Fedora, не включена для пакетов Debian и Ubuntu
 
-# Усиленные аллокаторы
+## Усиленные аллокаторы
 
 - суть проверки:
   * дополнительные меры в динамическом аллокаторе для затруднения атак на метаданные аллокатора

@@ -1,0 +1,16 @@
+GccDefault:gcc:::
+NoPIE:gcc:-no-pie:-no-pie:-DLLVM_ENABLE_PIC=OFF  # No idea why LLVM wants to build with -fPIC...
+AutoInit:gcc:-ftrivial-auto-var-init=zero::
+RELRO:gcc::-Wl,-z,relro -Wl,-z,now:
+StackProtector:gcc:-fstack-protector-strong::
+StackClash:gcc:-fstack-clash-protection::
+TrickyOpts:gcc:-fno-delete-null-pointer-checks -fno-strict-overflow -fno-strict-aliasing::
+Fortify3:gcc:-D_FORTIFY_SOURCE=3::
+HardenedSTL:gcc;-D_GLIBCXX_ASSERTIONS::
+# TODO: -fhardened
+
+# Some flags are only available in Clang++
+ClangDefault:clang:::
+ClangUBsan:clang:-fsanitize=undefined -fsanitize-minimal-runtime:-fsanitize-minimal-runtime:
+SafeStack:clang:-fsanitize=safe-stack::
+# TODO: Scudo

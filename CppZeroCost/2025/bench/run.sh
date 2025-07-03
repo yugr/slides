@@ -150,7 +150,7 @@ while read cfg; do
   # I used the slowest files to compile: CGBuiltins, X86ISelLowering, PassBuilder.
   for f in $(dirname $0)/files/*.ii; do
     for i in $(seq 1 $REPEAT); do
-      /usr/bin/time -o $tmp $B/bin/clang -O2 -w -S -o /dev/null $f
+      /usr/bin/time -o $tmp setarch -R $B/bin/clang -O2 -w -S -o /dev/null $f
       cat $tmp >> $OUT/$name/$(basename $f).log
     done
   done

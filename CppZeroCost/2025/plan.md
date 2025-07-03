@@ -36,6 +36,7 @@ TODO:
       + допустимые API (запрет `gets`, предпочтение `memset_s` и т.п.)
       + static analysis (в т.ч. обязательные варнинги помимо стандартных `-Wall -Wextra -Werror`, например `-Wformat=2 -Wconversion=2`, контракты)
       + доп. проверки (asserts, контракты и т.п.)
+      + пример неудачного внедения безопасных практик: [Updated Field Experience With Annex K — Bounds Checking Interfaces](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n1969.htm (2015))
     * безопасный деплой:
       + не поставлять программу с отладочной информацией (использовать separate debug info) или символьной таблицей
       + скрыть приватные символы из динамической таблицы символов
@@ -50,7 +51,7 @@ Time: 15 мин.
 
 Assignee: Юрий
 
-Effort: 17h
+Effort: 20h
 
 ## Методология
 
@@ -65,7 +66,7 @@ Effort: 17h
     * [Fedora](https://fedoraproject.org/wiki/Security_Features_Matrix)
     * пакетные флаги: https://rpmfind.net/linux/rpm2html/search.php?query=redhat-rpm-config
       + [Changes/Harden All Packages](https://fedoraproject.org/wiki/Changes/Harden_All_Packages)
-  - TODO: RedHat, BSDs ?
+  - TODO: RedHat, OpenSUSE, BSDs ?
 
 Сравнение с другими языками:
   - рассматриваем только статические языки (не JIT)
@@ -96,7 +97,7 @@ Effort: 17h
       + что включено для пакетов дистра и что в компиляторе (и в GCC, и в Clang)
       + проверить по https://github.com/jvoisin/compiler-flags-distro
   - ссылка на хорошую статью
-  - TODO: использование в open-source проектах (как собрать статистику ?)
+  - использование в реальных проектах (дистрах и т.д.)
 
 TODO: добавить проверки:
   - CFI (ARM PAC, Intel CET)
@@ -147,7 +148,8 @@ Heap overflow атаки:
 
 Распространённость buffer overflow-уязвимостей:
   - ~11% CVE и 6.5% KEV в 2024
-  - 20% из них это stack overflow (самые опасные)
+    * 20% из них это stack overflow (самые опасные)
+  - 40% memory corruptions in exploits (!) - buffer overflow ([Google Project Zero](https://security.googleblog.com/2024/11/retrofitting-spatial-safety-to-hundreds.html))
   - [Mitre CWE Top 25 2024](https://cwe.mitre.org/top25/archive/2024/2024_cwe_top25.html): места 2, 6, 8, 20
   - [70% уязвимостей в продуктах MS - ошибки памяти](https://msrc.microsoft.com/blog/2019/07/a-proactive-approach-to-more-secure-code/)
   - [70% high/critical ошибок в Chromium - ошибки памяти](https://www.chromium.org/Home/chromium-security/memory-safety/)
@@ -195,7 +197,8 @@ ASLR:
       + можно отключить флагом `-no-pie`
     * не включена по умолчанию в компиляторах Fedora
       + можно включить флагами `-fPIE -pie`
-      + пакеты дефолтно собираются с ними
+  - использование в реальных проектах
+      + пакеты Fedora (а также Ubuntu и Debian) дефолтно собираются с `-fPIE`
 
 Неисполняемый стек:
   - aka W^X, aka NX bit, aka Data Execution Prevention
@@ -245,6 +248,7 @@ ASLR:
     * если линкер не справился то можно воспользоваться
       + опцией `-Wl,-z,noexecstack` в GCC/Clang, `/NXCOMPAT` в Visual Studio
       + отключить execstack в готовой программе с помощью утилиты `execstack(8)`
+  - использование в реальных проектах
     * все современные дистро стараются использовать noexecstack по умолчанию в GCC и Clang
       + на моей системе execstack включён только у программ из пакета dpkg-query
         (`/usr/bin/lksh`, etc.)
@@ -278,7 +282,8 @@ ASLR:
     * Java заставляет программиста инициализировать локальные переменные (динамическая память гарантированно зануляется)
   - как включить:
     * флаг `-ftrivial-auto-var-init=zero` (GCC, Clang), [скрытый](https://lectem.github.io/msvc/reverse-engineering/build/2019/01/21/MSVC-hidden-flags.html) [флаг](https://msrc.microsoft.com/blog/2020/05/solving-uninitialized-stack-memory-on-windows/) `-initall` (Visual Studio)
-    * не включён по умолчанию нигде
+  - TODO: использование в реальных проектах
+    * не включён по умолчанию ни в одном дистро
 
 Защита таблиц диспетчеризации:
   - вызовы функции из динамических библиотек делаются через PLT-stubs
@@ -314,11 +319,14 @@ ASLR:
     * указать опции линкера: `-Wl,-z,now -Wl,-z,relro`
     * поддержка в дистрибутивах и тулчейнах:
       + Debian: не включены по умолчанию ни в GCC, ни в Clang
-        - пакеты дефолтно [собираются с partial RELRO](https://wiki.debian.org/HardeningWalkthrough#Selecting_security_hardening_options)
       + Ubuntu: включены по умолчанию в GCC, но только `-z relro` в Clang (partial RELRO)
-      + Fedora: не включены по умолчанию ни в GCC, ни в Clang (но пакеты дефолтно [собираются с full RELRO](https://fedoraproject.org/wiki/Security_Features_Matrix#Built_with_RELRO))
+      + Fedora: не включены по умолчанию ни в GCC, ни в Clang
   - ссылка на статью:
     * https://www.redhat.com/en/blog/hardening-elf-binaries-using-relocation-read-only-relro
+  - использование в реальных проектах
+    * Debian: пакеты дефолтно [собираются с partial RELRO](https://wiki.debian.org/HardeningWalkthrough#Selecting_security_hardening_options)
+    * Fefora: пакеты дефолтно [собираются с full RELRO](https://fedoraproject.org/wiki/Security_Features_Matrix#Built_with_RELRO))
+    * Ubuntu: пакеты дефолтно собираются с full RELRO
 
 Уменьшение зависимостей:
   - часто программа линкует лишние библиотеки (например из-за устаревших билдскриптов)
@@ -343,9 +351,10 @@ ASLR:
   - как включить
     * опция линкера `-Wl,--as-needed`
     * включена по умолчанию в GCC в Debian и Ubuntu, но не в Fedora
-      + пакеты в Fedora дефолтно собираются с `--as-needed`
     * не включена по умолчанию в Clang нигде
   - ссылка на хорошую статью: https://wiki.gentoo.org/wiki/Project:Quality_Assurance/As-needed
+  - использование в реальных проектах:
+    * пакеты в Fedora дефолтно собираются с `--as-needed` (а также Debian и Ubuntu)
 
 Stack protector:
   - рядом с return address на стеке размещается специальное случайное число ("канарейка")
@@ -394,10 +403,11 @@ Stack protector:
   - кaк включить:
     * флаг `-fstack-protector-strong` (GCC, Clang), `/GS` (Visual Studio)
     * включена по умолчанию в Ubuntu GCC и больше нигде
-      + пакеты в Debian и Fedora дефолтно собираются с `-fstack-protector-strong`
   - ссылки на статьи:
     * https://wiki.osdev.org/Stack_Smashing_Protector
     * https://www.redhat.com/en/blog/security-technologies-stack-smashing-protection-stackguard
+  - использование в реальных проектах
+    * пакеты в Debian и Fedora (а также Ubuntu) дефолтно собираются с `-fstack-protector-strong`
 
 Stack clashing (aka stack probes):
   - различные стеки и куча отделены друга от друга guard pages
@@ -423,12 +433,13 @@ Stack clashing (aka stack probes):
   - как включить
     * `-fstack-clash-protection` (ещё есть устаревший и неиспользуемый `-fstack-check`)
     * включены по умолчанию в Ubuntu GCC и больше нигде
-      + пакеты Fedora дефолтно собираются с `-fstack-clash-protection`
-      + пакеты Debian [похоже](https://github.com/jvoisin/compiler-flags-distro/issues/12) собираются пока без этого флага
   - ссылки на статьи:
     * https://developers.redhat.com/blog/2017/09/25/stack-clash-mitigation-gcc-background
     * https://developers.redhat.com/blog/2019/04/30/stack-clash-mitigation-in-gcc-why-fstack-check-is-not-the-answer
     * https://developers.redhat.com/blog/2020/05/22/stack-clash-mitigation-in-gcc-part-3
+  - TODO: использование в реальных проектах
+    * пакеты Fedora (и Ubuntu) дефолтно собираются с `-fstack-clash-protection`
+    * пакеты Debian [похоже](https://github.com/jvoisin/compiler-flags-distro/issues/12) собираются пока без этого флага
 
 Отключение агрессивных оптимизаций:
   - некоторые компиляторы могут излишне агрессивно
@@ -485,6 +496,7 @@ Stack clashing (aka stack probes):
   - ссылки на статьи:
     * [обсуждение `-fwrapv` в Firefox](https://bugzilla.mozilla.org/show_bug.cgi?id=1031653)
     * [Security flaws caused by compiler optimizations](https://www.redhat.com/en/blog/security-flaws-caused-compiler-optimizations)
+  - TODO: использование в реальных проектах
 
 Проверки целочисленного переполнения:
   - суть проверки:
@@ -494,11 +506,6 @@ Stack clashing (aka stack probes):
       большой рантайм, открывающий новые возможности для атаки
     * решение: использование "Ubsan minimal runtime"
       (немедленный аборт программы)
-  - использование в реальных проектах:
-    * используется в Android media stack:
-      + https://android-developers.googleblog.com/2016/05/hardening-media-stack.html
-      + https://android-developers.googleblog.com/2018/06/compiler-based-security-mitigations-in.html
-    * TODO: как собрать статистику ?
   - TODO: пример ошибки
   - TODO: целевые уязвимости и распространённость (анализ CVE/KVE):
     * CVE/KVE по integer overflow достаточно мало
@@ -524,6 +531,11 @@ Stack clashing (aka stack probes):
     * Clang: `-fsanitize=undefined -fsanitize-minimal-runtime` (рекомендую также добавлять `integer`)
     * GCC: `-fsanitize-trap=undefined` (`integer` не поддержан в GCC)
   - TODO: ссылка на хорошую статью
+  - использование в реальных проектах
+    * не используется в дистрах
+    * используется в Android media stack:
+      + https://android-developers.googleblog.com/2016/05/hardening-media-stack.html
+      + https://android-developers.googleblog.com/2018/06/compiler-based-security-mitigations-in.html
 
 Разделение стеков:
   - суть проверки:
@@ -559,6 +571,8 @@ Stack clashing (aka stack probes):
       + а также RetGuard, Intel CET, etc.
   - ссылка на статью:
     * https://blog.includesecurity.com/2015/11/strengths-and-weaknesses-of-llvms-safestack-buffer-overflow-protection/
+  - использование в реальных проектах:
+    * не включён по умолчанию в дистрах
 
 Фортификация (`_FORTIFY_SOURCE`):
   - суть проверки:
@@ -593,14 +607,16 @@ Stack clashing (aka stack probes):
         }
         ```
     * как можно видеть реализация проверки требует совместной работы
-      библиотеки и компилятора
+      библиотеки (подмена стандартной функции на chk-версию) и компилятора (вычисление доп. параметров)
     * конкретный список проверяемых функций можно уточнить в реализации библиотеки
       (Glibc или Musl); как минимум:
       + printf and friends - %n допускается только в readonly-строках (проверяется по `/proc/self/maps`)
       + string.h APIs (`memcpy`, `memset`, `strcpy`, `strcat`, `bzero`, `bcopy`, etc.) - проверки диапазона
       + unistd.h APIs (`read`, `pread`, `readlink`, etc.) - проверки диапазона
   - TODO: пример ошибки
-  - целевые уязвимости: все buffer overflow (см. выше)
+  - целевые уязвимости:
+    * все buffer overflow (stack, heap)
+    * см. выше
   - TODO: история (optional)
   - TODO: возможные расширения
   - эквивалентные отладочные проверки:
@@ -609,8 +625,9 @@ Stack clashing (aka stack probes):
       + из-за этого использовать Asan с `_FORTIFY_SOURCE` нельзя - можно пропустить баги
       + из-за того что `_FORTIFY_SOURCE` включён по умолчанию его надо явно отключать в санитарных сборках:
         - `-U_FORTIFY_SOURCE` или `-D_FORTIFY_SOURCE=0`
-        - TODO: проверить что это работает
-  - оверхед
+      + на самом деле GCC (не Clang) вставляет доп. минимальную инструментацию в месте вызова
+        для `memcpy_chk`, `memmove_chk`, `memset_chk`, но этого мало
+  - оверхед:
     * [`_FORTIFY_SOURCE=2` gives 3% ffmpeg overhead](https://zatoichi-engineer.github.io/2017/10/06/fortify-source.html)
     * TODO: померять дефолтный бенч (проверить `-D_FORTIFY_SOURCE=2` и `-D_FORTIFY_SOURCE=3`)
   - TODO: проблемы:
@@ -629,38 +646,72 @@ Stack clashing (aka stack probes):
     $ gcc -x c /dev/null -O2 -E -dM | grep FORTIFY
     ```
     * Debian GCC: не включён по умолчанию в компиляторе
-      + пакеты дефолтно собираются с `-D_FORTIFY_SOURCE=2`
     * Fedora GCC: не включён по умолчанию в компиляторе
-      + пакеты с 2023 дефолтно собираются с `-D_FORTIFY_SOURCE=3`
     * Ubuntu GCC: `-D_FORTIFY_SOURCE=3` по умолчанию в компиляторе
     * Clang: не включён по умолчанию нигде
   - ссылки на статьи:
     * https://www.redhat.com/en/blog/security-technologies-fortifysource
     * TODO: https://maskray.me/blog/2022-11-06-fortify-source
-  - TODO: использование в open-source проектах (как собрать статистику ?)
+  - использование в реальных проектах
+      + Debian (и Ubuntu): пакеты дефолтно собираются с `-D_FORTIFY_SOURCE=2`
+      + Fedora: пакеты с 2023 дефолтно собираются с `-D_FORTIFY_SOURCE=3`
 
 Проверки STL, в т.ч. индексации и итераторов (`_GLIBCXX_ASSERTIONS` в GCC, `_LIBCPP_HARDENING_MODE` в Clang):
-  - TODO: суть
+  - aka "Hardened libc++"
+  - суть проверки:
+    * зависят от компилятора и уровня проверки
+    * всегда включают проверки индексов в `std::vector` и `std::string`
+      + а также `front`, `back`, etc.
+    * GCC-specific:
+      + проверки на `NULL` в умных указателях
+      + проверки корректности параметров мат. функций и распределений
+      + множество других мелких проверок типа `abs(INT_MIN)` в `std::gcd` и `std::lcm`
+      + реализованы через макросы типа `__glibcxx_assert` в шаблонных реализациях
+    * LLVM:
+      + проверки на Strict Weak Ordering компараторов
+        - см. доклад
+      + множество других мелких проверок типа `abs(INT_MIN)` в `std::gcd` и `std::lcm`
+    * Visual Studio:
+      + также "checked iterators"
+        - точно проверки не указны
+      + [планируется удалить](https://www.reddit.com/r/cpp/comments/1hzj1if/comment/m6spu55),
+        из-за [слишком большого оверхеда](https://www.reddit.com/r/cpp/comments/1hzj1if/comment/m6spg8v)
+  - скорее всего эти проверки станут частью Стандарта (через механизм профилей)
+    * инструменты для миграции уже есть ([Safe Buffers](https://discourse.llvm.org/t/rfc-c-buffer-hardening/65734))
+    * caveat: [Updated Field Experience With Annex K — Bounds Checking Interfaces](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n1969.htm (2015))
   - TODO: пример ошибки
-  - TODO: целевые уязвимости и распространённость (анализ CVE/KVE)
+  - целевые уязвимости и распространённость:
+    * индексные проверки предотвращают buffer overflow (см. статистику выше)
+    * остальных проверок так много что трудно идентифицировать конкретные CVE
   - TODO: история (optional)
-  - TODO: возможные расширения
-  - TODO: эквивалентные отладочные проверки
-  - TODO: оверхед
-    * процитировать известные результаты
-    * использовать один и тот же бенч
+  - возможные расширения:
+    * компиляторы поддерживают также ABI-breaking флаги, которые намного сильнее замедляют рантайм
+    * рекомендуется включать их в QA-сборках
+    * GCC: `-D_GLIBCXX_DEBUG` (надмножество `_GLIBCXX_ASSERTIONS`, несовместимо по ABI => требуется перекомпиляция C++-зависимостей)
+    * Clang: `-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_DEBUG`
+    * Visual Studio: `/D_ITERATOR_DEBUG_LEVEL=1` (говорят может менять ABI,
+      т.е. потребуется пересборка всех зависимостей,
+      но в [коде](https://github.com/microsoft/STL) этого не видно)
+  - эквивалентные отладочные проверки:
+    * Asan (и до некоторой степени Valgrind) обнаруживают причины подобных ошибок (buffer overflow)
+  - оверхед
+    * [0.3% in Google server systems](https://security.googleblog.com/2024/11/retrofitting-spatial-safety-to-hundreds.html)
+      + важно: [требуется поддержка ThinLTO и PGO](https://www.reddit.com/r/cpp/comments/1hzj1if/comment/m6vpzh4)
+        иначе [можно ожидать 4x](https://bughunters.google.com/blog/6368559657254912/llvm-s-rfc-c-buffer-hardening-at-google)
+    * TODO: померять дефолтный бенч
   - TODO: проблемы:
     * false positives и false negatives (искать "bypassing FEATURE")
     * поддержка динамических библиотек
     * поддержка на разных платформах
-  - TODO: сравнение с безопасными языками
-    * Rust
-  - TODO: как включить
-    * опции и макросы компилятора с подробным пояснением и примерами
-    * ограничения на динамическую линковку
-    * поддержка в дистрибутивах и тулчейнах
+  - сравнение с безопасными языками
+    * в Rust аналогичные проверки делаются всегда
+  - как включить:
+    * `-D_GLIBCXX_ASSERTIONS` (GCC), `-D_LIBCPP_HARDENING_MODE=...` (Clang), `-D_ITERATOR_DEBUG_LEVEL=1` (Visual Studion)
   - ссылка на хорошую статью
-  - TODO: использование в open-source проектах (как собрать статистику ?)
+  - использование в реальных проектах:
+    * [Google: Chrome and server systems](https://security.googleblog.com/2024/11/retrofitting-spatial-safety-to-hundreds.html)
+    * [Google Andromeda <1% with FDO and 2.5% without](https://bughunters.google.com/blog/6368559657254912/llvm-s-rfc-c-buffer-hardening-at-google)
+    * включена для пакетов Fedora, не включена для пакетов Debian и Ubuntu
 
 `-fhardened`:
   - зонтичная опция для всех hardened-оптимизаций

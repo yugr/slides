@@ -93,7 +93,7 @@ Heap overflow атаки:
     * [Mitre CWE Top 25 2024](https://cwe.mitre.org/top25/archive/2024/2024_cwe_top25.html): место 23
   - неинициализированные данные
 
-## ASLR
+## ASLR (PIE)
 
 - случайное расположение частей программы в адресном пространстве
   * стек, куча, код библиотек
@@ -195,11 +195,12 @@ Heap overflow атаки:
 - TODO: расширения
 - TODO: что будет в C++26 (@Роман):
   * `[[indeterminate]]`
-  * [P2795](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2023/p2795r3.html#proposal))
+  * [P2795](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2023/p2795r3.html)
   * [P2723](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2023/p2723r1.html)
 - эквивалентные отладочные проверки: Msan, Valgrind, [DirtyFrame](https://github.com/yugr/DirtyFrame)
 - целевые уязвимости и распространённость:
   * около 50 uninitialized variable CVE в 2024 (1% от buffer overflow CVE)
+  * TODO: KEV
 - оверхед:
   * [1% на Firefox](https://serge-sans-paille.github.io/pythran-stories/trivial-auto-var-init-experiments.html)
   * may take over 10% on hot paths:
@@ -651,7 +652,8 @@ Heap overflow атаки:
 - сравнение с безопасными языками
   * в Rust аналогичные проверки делаются всегда
 - как включить:
-  * `-D_GLIBCXX_ASSERTIONS` (GCC), `-D_LIBCPP_HARDENING_MODE=...` (Clang), `-D_ITERATOR_DEBUG_LEVEL=1` (Visual Studion)
+  * `-D_GLIBCXX_ASSERTIONS` (libstdc++, дефолт в GCC и Clang), `-D_LIBCPP_HARDENING_MODE=...` (libc++, включается в Clang по `-stdlib=libc++`), `-D_ITERATOR_DEBUG_LEVEL=1` (Visual Studio)
+  * по умолчанию ни включена ни в одном дистре
 - ссылка на хорошую статью
 - использование в реальных проектах:
   * [Google: Chrome and server systems](https://security.googleblog.com/2024/11/retrofitting-spatial-safety-to-hundreds.html)

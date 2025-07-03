@@ -86,11 +86,13 @@ Heap overflow атаки:
     * Log4Shell (уязвимость в безопасном языке из-за исполнения произвольного кода)
     * XZ Utils (социальная инженерия)
 
-Распространённость integer overflow-уязвимостей:
-  - ~1% CVE и 1.5% KEV в 2024
-  - [Mitre CWE Top 25 2024](https://cwe.mitre.org/top25/archive/2024/2024_cwe_top25.html): место 23
+Другие виды уязвимостей:
+  - integer overflow:
+    * ~1% CVE и 1.5% KEV в 2024
+    * [Mitre CWE Top 25 2024](https://cwe.mitre.org/top25/archive/2024/2024_cwe_top25.html): место 23
+  - неинициализированные данные
 
-## ASLR 
+## ASLR
 
 - случайное расположение частей программы в адресном пространстве
   * стек, куча, код библиотек

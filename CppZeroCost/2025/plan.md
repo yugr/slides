@@ -43,7 +43,7 @@ TODO:
     * мы в докладе рассматриваем ТОЛЬКО рантайм-проверки в тулчейне (т.е. компиляторе и стд. библиотеках)
       + mitigation, не prevention
   - требования к харденинг: низкий оверхед + высокая точность (low false positive rate) + простота интеграции (например не ломают ABI)
-  - рекомендации: какие флаги включить у себя в проде
+  - слайд с выводами: какие флаги включить у себя в проде
 
 # (2) Исчерпывающее перечисление: stack protector, pie, cfi, minimal ubsan, fortify, etc.
 
@@ -51,7 +51,7 @@ Time: 15 мин.
 
 Assignee: Юрий
 
-Effort: 20h
+Effort: 21h
 
 ## Атаки (exploits)
 
@@ -74,6 +74,7 @@ Heap overflow атаки:
     * поменять метаданные аллокатора, чтобы заставить его менять произвольные адреса
       (например поменять адрес malloc hook и вызвать его при следующем malloc,
       House of Force)
+  - примеры атак: https://0x434b.dev/overview-of-glibc-heap-exploitation-techniques/
 
 Распространённость buffer overflow-уязвимостей:
   - ~11% CVE и 6.5% KEV в 2024
@@ -196,7 +197,7 @@ Heap overflow атаки:
   * `[[indeterminate]]`
   * [P2795](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2023/p2795r3.html#proposal))
   * [P2723](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2023/p2723r1.html)
-- эквивалентные отладочные проверки: Msan, [DirtyFrame](https://github.com/yugr/DirtyFrame)
+- эквивалентные отладочные проверки: Msan, Valgrind, [DirtyFrame](https://github.com/yugr/DirtyFrame)
 - целевые уязвимости и распространённость:
   * около 50 uninitialized variable CVE в 2024 (1% от buffer overflow CVE)
 - оверхед:
@@ -435,6 +436,7 @@ Heap overflow атаки:
 - ссылки на статьи:
   * [обсуждение `-fwrapv` в Firefox](https://bugzilla.mozilla.org/show_bug.cgi?id=1031653)
   * [Security flaws caused by compiler optimizations](https://www.redhat.com/en/blog/security-flaws-caused-compiler-optimizations)
+  * https://my.eng.utah.edu/~cs5785/slides-f10/Dangerous+Optimizations.pdf
 - TODO: использование в реальных проектах
 
 ## Проверки целочисленного переполнения
@@ -656,6 +658,61 @@ Heap overflow атаки:
   * [Google Andromeda <1% with FDO and 2.5% without](https://bughunters.google.com/blog/6368559657254912/llvm-s-rfc-c-buffer-hardening-at-google)
   * включена для пакетов Fedora, не включена для пакетов Debian и Ubuntu
 
+# Усиленные аллокаторы
+
+- суть проверки:
+  * дополнительные меры в динамическом аллокаторе для затруднения атак на метаданные аллокатора
+- примеры реализации:
+  * [Scudo](https://llvm.org/docs/ScudoHardenedAllocator.html) (дефолтный аллокатор Android)
+    + чексуммы для обнаружения перезаписи метаданных
+    + рандомизация адресов внутри блоков
+    + отложенное переиспользование освобождённой памяти (quarantine)
+    + mmap-only (нет `sbrk(2)`, для рандомизации)
+  * hardened_malloc:
+    + метаданные физически отделены от аллоцируемой памяти (нет "хедеров")
+    + рандомизация адресов внутри блоков
+    + отложенное переиспользование освобождённой памяти (quarantine)
+    + зануление данных на `free` и проверка на `malloc`
+    + канарейки
+    + mmap-only (нет `sbrk(2)`, для рандомизации)
+  * malloc-ng (musl allocator)
+    + TODO
+  * Glibc
+    + pointer encryption - XOR всех указателей на функции с канарейкой
+    + TODO: Glibc heap protector
+- TODO: пример ошибки
+- целевые уязвимости и распространённость:
+  * heap overflow
+  * use-after-free
+  * double free
+  * TODO: проанализировать CVE/KEV
+- TODO: история (optional)
+- TODO: возможные расширения
+- эквивалентные отладочные проверки: Asan, Valgrind, ElectricFence
+- оверхед
+  * [musl allocator 2-10x](https://nickb.dev/blog/default-musl-allocator-considered-harmful-to-performance/)
+    + TODO: [global lock](https://news.ycombinator.com/item?id=23081071) ?
+  * TODO: померять дефолтный бенч
+- TODO: проблемы:
+  * false positives и false negatives (искать "bypassing FEATURE")
+  * атаки на Scudo: https://www.usenix.org/system/files/woot24-mao.pdf
+  * поддержка динамических библиотек
+  * поддержка на разных платформах
+- сравнение с безопасными языками
+  * в Rust невозможны ошибки памяти
+- как включить:
+  * обычно достаточно `LD_PRELOAD=path/to/new/allocator.so`
+- ссылки на статьи:
+  * https://www.l3harris.com/newsroom/editorial/2023/10/scudo-hardened-allocator-unofficial-internals-documentation
+  * https://github.com/struct/isoalloc/blob/master/SECURITY_COMPARISON.MD
+- использование в реальных проектах:
+  * Android использует Scudo по дефолту
+  * Chrome [использует](https://blog.chromium.org/2021/04/efficient-and-safe-allocations-everywhere.html)
+    hardened-аллокатор PartitionAlloc
+  * Firefox [использует](https://madaidans-insecurities.github.io/firefox-chromium.html#memory-allocator-hardening)
+    не-hardened аллокатор
+  * GrapheneOS использует hardned_malloc
+
 ## `-fhardened`
 
 - зонтичная опция для всех hardened-оптимизаций
@@ -681,10 +738,6 @@ Heap overflow атаки:
     * also `-fcf-protection` and https://learn.microsoft.com/en-us/windows/win32/secbp/control-flow-guard
   - Stack scrubbing (`-fstrub`)
   - `-fzero-call-used-regs` (https://www.semanticscholar.org/paper/Clean-the-Scratch-Registers%3A-A-Way-to-Mitigate-Rong-Xie/6f2ce4fd31baa0f6c02f9eb5c57b90d39fe5fa13)
-  - hardened allocator:
-    * [Scudo allocator](https://llvm.org/docs/ScudoHardenedAllocator.html)
-    * Musl allocator
-    * Glibc: pointer obfuscation, Heap Protector
 
 # (3) Hardening под капотом на примере LLVM
 

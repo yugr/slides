@@ -42,7 +42,7 @@
       + что включено для пакетов дистра и что в компиляторе (и в GCC, и в Clang)
       + проверить по https://github.com/jvoisin/compiler-flags-distro
   - ссылка на хорошую статью
-  - использование в реальных проектах (дистрах и т.д.)
+  - использование в реальных проектах (дистрах, браузерах и т.д.)
 
 TODO: прочитать:
   - https://fedoraproject.org/wiki/Security_Features_Matrix

@@ -41,7 +41,7 @@ TODO:
       + скрыть приватные символы из динамической таблицы символов
     * мы в докладе рассматриваем ТОЛЬКО рантайм-проверки в тулчейне (т.е. компиляторе и стд. библиотеках)
       + mitigation, не prevention
-  - требования к харденинг: низкий оверхед + высокая точность (low false positive rate)
+  - требования к харденинг: низкий оверхед + высокая точность (low false positive rate) + простота интеграции (например не ломают ABI)
   - рекомендации: какие флаги включить у себя в проде
 
 # (2) Исчерпывающее перечисление: stack protector, pie, cfi, minimal ubsan, fortify, etc.
@@ -75,7 +75,7 @@ Effort: 13h
 Для каждой проверки нужно описать
   - суть
   - пример ошибки
-  - классы атак и распространённость (анализ CVE/KVE)
+  - целевые уязвимости и распространённость (анализ CVE/KVE)
   - история (optional)
   - возможные расширения
   - эквивалентные отладочные проверки
@@ -99,9 +99,6 @@ Effort: 13h
   - TODO: использование в open-source проектах (как собрать статистику ?)
 
 TODO: добавить проверки:
-  - `_FORTIFY_SOURCE`
-    * https://www.redhat.com/en/blog/security-technologies-fortifysource
-  - Проверки STL, в т.ч. индексации и итераторов (`_GLIBCXX_ASSERTIONS` в GCC, `_LIBCPP_HARDENING_MODE` в Clang)
   - CFI (ARM PAC, Intel CET)
     * verify static and dynamic types match
     * also checks for dynamic types for vcalls, C++ casts, etc.
@@ -172,9 +169,9 @@ ASLR:
     * теперь ядро может перемещать сегмент кода при старте программы
   - существенно снизил вероятность атак return-to-libc и ROP
   - TODO: история
-  - TODO: классы атак и распространённость
+  - TODO: целевые уязвимости и распространённость
   - эквивалентные отладочные проверки:
-    * Valgrind и Asan обнаруживают причину подобных ошибок (buffer overflow)
+    * Asan (и до некоторой степени Valgrind) обнаруживают причину подобных ошибок (buffer overflow)
   - проблемы:
     * TODO: FP и FN
     * статические данные не рандомизируются (только базовый адрес приложения) => хакер знает смещение GOT и PLT таблиц и может атаковать их
@@ -207,9 +204,9 @@ ASLR:
   - отключает возможность исполнения кода в сегменте стека на уровене OS
     * ликвидирует stack smashing атаки как класс
   - TODO: пример ошибки
-  - TODO: классы атак и распространённость
+  - TODO: целевые уязвимости и распространённость
   - эквивалентные отладочные проверки:
-    * Valgrind и Asan обнаруживают причину подобных ошибок (buffer overflow)
+    * Asan обнаруживает причину подобных ошибок (stack buffer overflow)
   - проблемы:
     * TODO: FP и FN
     * обойти защиту никак нельзя
@@ -254,7 +251,6 @@ ASLR:
 
 Автоматическая инициализация:
   - инициализация всех локальных переменных (нулями для hardening, случайными значениями для debug)
-  - TODO: виды атак
   - TODO: пример ошибки
   - TODO: история
   - TODO: расширения
@@ -262,8 +258,8 @@ ASLR:
     * `[[indeterminate]]`
     * [P2795](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2023/p2795r3.html#proposal))
     * [P2723](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2023/p2723r1.html)
-  - эквивалентные отладочные проверки: Valgrind, Msan, [DirtyFrame](https://github.com/yugr/DirtyFrame)
-  - классы атак и распространённость:
+  - эквивалентные отладочные проверки: Msan, [DirtyFrame](https://github.com/yugr/DirtyFrame)
+  - целевые уязвимости и распространённость:
     * около 50 uninitialized variable CVE в 2024 (1% от buffer overflow CVE)
   - оверхед:
     * [1% на Firefox](https://serge-sans-paille.github.io/pythran-stories/trivial-auto-var-init-experiments.html)
@@ -298,7 +294,7 @@ ASLR:
     * подход RELRO уже использовался ранее для однократно инициализируемых таблиц (vtables)
       + см. [статью Ian Lance Taylor](https://www.airs.com/blog/archives/189)
     * потребовалась лишь небольшая адаптация для GOT
-  - классы атак и распространённость: соответствующие CVE не найдены
+  - целевые уязвимости и распространённость: соответствующие CVE не найдены
     * более редкая атака чем buffer overflow, но вполне реальная:
       + смещение GOT/PLT известно
       + хакер с помощью ROP может поменять их и сделать return-to-plt
@@ -333,7 +329,7 @@ ASLR:
   - обычно эти опции используют только для ускорения стартапа, но у них есть вторичный эффект:
     * уменьшается число доступных хакеру библиотек (для поиска гаджетов)
   - могут быть полезны против всех stack overflow атак, полагающихся на ROP
-  - TODO: классы атак и распространённость (анализ CVE):
+  - TODO: целевые уязвимости и распространённость (анализ CVE):
   - эквивалентные отладочные проверки: те же что у неисполняемого стека
   - TODO: история
   - TODO: расширения
@@ -357,7 +353,7 @@ Stack protector:
     * также переупорядочивает переменные: скаляры кладутся ниже по стеку чем массивы
       + чтобы при переполнении массива нельзя было модифицировать флаги и т.п.
   - TODO: пример ошибки
-  - классы атак и распространённость:
+  - целевые уязвимости и распространённость:
     * позволяет обнаруживать переполнение буфера перед return и соответственно ломает return-to-libc и ROP
     * TODO: анализ CVE
   - TODO: расширения
@@ -375,7 +371,7 @@ Stack protector:
         - функции с любыми (в т.ч. вложенными) массивами
         - функции, которые передают адрес на локальные переменные
         - и т.п.
-  - эквивалентные отладочные проверки: Valgrind, Asan
+  - эквивалентные отладочные проверки: Asan (не Valgrind !)
   - оверхед
     * существенные накладные расходы:
       + загрузка значения канарейки
@@ -413,7 +409,7 @@ Stack clashing (aka stack probes):
       мы как бы перепрыгиваем guard page ?
     * идея пройти по всему фрейму с шагом 4096 перед началом работы,
       чтобы гарантированно спровоцировать SEGV
-  - TODO: классы атак и распространённость (анализ CVE)
+  - TODO: целевые уязвимости и распространённость (анализ CVE)
   - TODO: история (optional)
     * [серия статей Qualys](https://www.qualys.com/2017/06/19/stack-clash/stack-clash.txt) с proof of concept (2017)
   - TODO: возможные расширения
@@ -461,7 +457,7 @@ Stack clashing (aka stack probes):
   - обычно отключают:
     * `-fno-delete-null-pointer-checks`, `-fno-strict-overflow`, `-fno-strict-aliasing` (GCC/Clang)
     * [`d2SSAOptimizerUndefinedIntOverflow-`](https://devblogs.microsoft.com/cppblog/new-code-optimizer/) (Visual Studio)
-  - классы атак и распространённость:
+  - целевые уязвимости и распространённость:
     * CVE по этой фиче очень мало (например [CVE-2009-1897](https://nvd.nist.gov/vuln/detail/CVE-2009-1897)),
       но в статьях находят сотни CISB в open-source коде:
       + "Silent Bugs Matter: A Study of Compiler-Introduced Security Bugs"
@@ -498,11 +494,13 @@ Stack clashing (aka stack probes):
       большой рантайм, открывающий новые возможности для атаки
     * решение: использование "Ubsan minimal runtime"
       (немедленный аборт программы)
-    * используется Android media stack:
+  - использование в реальных проектах:
+    * используется в Android media stack:
       + https://android-developers.googleblog.com/2016/05/hardening-media-stack.html
       + https://android-developers.googleblog.com/2018/06/compiler-based-security-mitigations-in.html
+    * TODO: как собрать статистику ?
   - TODO: пример ошибки
-  - TODO: классы атак и распространённость (анализ CVE/KVE):
+  - TODO: целевые уязвимости и распространённость (анализ CVE/KVE):
     * CVE/KVE по integer overflow достаточно мало
     * два канонических примера: инцидент с облучателем Therac-25 и катастрофа ракеты Ariane 5
   - TODO: история (optional)
@@ -538,10 +536,10 @@ Stack clashing (aka stack probes):
     * полная защита от stack buffer overflow + дополнительная рандомизация
       для критических данных
   - TODO: пример ошибки
-  - TODO: классы атак и распространённость (анализ CVE/KVE)
+  - TODO: целевые уязвимости и распространённость (анализ CVE/KVE)
   - TODO: история (optional)
   - TODO: возможные расширения
-  - TODO: эквивалентные отладочные проверки
+  - эквивалентные отладочные проверки: Asan
   - оверхед:
     * [0.1% SafeStack](https://clang.llvm.org/docs/SafeStack.html)
     * TODO: померять дефолтный бенч
@@ -561,6 +559,108 @@ Stack clashing (aka stack probes):
       + а также RetGuard, Intel CET, etc.
   - ссылка на статью:
     * https://blog.includesecurity.com/2015/11/strengths-and-weaknesses-of-llvms-safestack-buffer-overflow-protection/
+
+Фортификация (`_FORTIFY_SOURCE`):
+  - суть проверки:
+    * фортификация добавляет проверки диапазонов в функции стандартной библиотеки
+      (там где это возможно):
+    * например в стандартных хедере Glibc можно увидеть что-то типа
+      ```
+     #if _FORTIFY_SOURCE > 0
+      __attribute__((always_inline, __nothrow__, leaf)) void *
+     memset (void *__dest, int __ch, size_t __len)
+     {
+        return __builtin___memset_chk (__dest, __ch, __len,
+                                       __glibc_objsize0 (__dest));
+     }
+     #endif
+    ```
+    * в этом коде функция `memset_chk` определена в стандартной библиотеке
+      и содержит проверку диапазона
+    * интересный момент с макросом `__glibc_objsize0`: он определяется в два разных
+      интринсика в зависимости от агрессивности проверок:
+      + `_FORTIFY_SOURCE=2`: `__builtin_object_size` - вернёт константный размер объекта,
+        если он известен (например для локальных массивов на стеке), иначе `SIZE_MAX`
+      + `_FORTIFY_SOURCE=3`: `__builtin_dynamic_object_size` - делает простой
+        статический анализ кода с целью определения размер для переменных буферов;
+        например позволяет проверить диапазон для
+        ```
+        void *copy_obj (const void *src, size_t alloc, size_t copysize)
+        {
+          void *obj = malloc (alloc);
+          memcpy (obj, src, copysize);
+          return obj;
+        }
+        ```
+    * как можно видеть реализация проверки требует совместной работы
+      библиотеки и компилятора
+    * конкретный список проверяемых функций можно уточнить в реализации библиотеки
+      (Glibc или Musl); как минимум:
+      + printf and friends - %n допускается только в readonly-строках (проверяется по `/proc/self/maps`)
+      + string.h APIs (`memcpy`, `memset`, `strcpy`, `strcat`, `bzero`, `bcopy`, etc.) - проверки диапазона
+      + unistd.h APIs (`read`, `pread`, `readlink`, etc.) - проверки диапазона
+  - TODO: пример ошибки
+  - целевые уязвимости: все buffer overflow (см. выше)
+  - TODO: история (optional)
+  - TODO: возможные расширения
+  - эквивалентные отладочные проверки:
+    * аналогичные проверки, но намного более эффективные и медленные, делают Asan и Valgrind
+    * важно отметить что Asan [не умеет анализировать `XXX_chk`-функции](https://github.com/google/sanitizers/issues/247)
+      + из-за этого использовать Asan с `_FORTIFY_SOURCE` нельзя - можно пропустить баги
+      + из-за того что `_FORTIFY_SOURCE` включён по умолчанию его надо явно отключать в санитарных сборках:
+        - `-U_FORTIFY_SOURCE` или `-D_FORTIFY_SOURCE=0`
+        - TODO: проверить что это работает
+  - оверхед
+    * [`_FORTIFY_SOURCE=2` gives 3% ffmpeg overhead](https://zatoichi-engineer.github.io/2017/10/06/fortify-source.html)
+    * TODO: померять дефолтный бенч (проверить `-D_FORTIFY_SOURCE=2` и `-D_FORTIFY_SOURCE=3`)
+  - TODO: проблемы:
+    * false positives
+    * false negatives
+      + искать "bypassing FEATURE"
+      + поддержана только в Glibc (не в musl)
+    * поддержка динамических библиотек
+    * поддержка на разных платформах
+  - сравнение с безопасными языками
+    * Rust включает обязательные (и неотключаемые) проверки диапазанов
+  - как включить:
+    * для явного включения используется `-D_FORTIFY_SOURCE=2` или -`D_FORTIFY_SOURCE=3`
+    * проверка в дистре:
+    ```
+    $ gcc -x c /dev/null -O2 -E -dM | grep FORTIFY
+    ```
+    * Debian GCC: не включён по умолчанию в компиляторе
+      + пакеты дефолтно собираются с `-D_FORTIFY_SOURCE=2`
+    * Fedora GCC: не включён по умолчанию в компиляторе
+      + пакеты с 2023 дефолтно собираются с `-D_FORTIFY_SOURCE=3`
+    * Ubuntu GCC: `-D_FORTIFY_SOURCE=3` по умолчанию в компиляторе
+    * Clang: не включён по умолчанию нигде
+  - ссылки на статьи:
+    * https://www.redhat.com/en/blog/security-technologies-fortifysource
+    * TODO: https://maskray.me/blog/2022-11-06-fortify-source
+  - TODO: использование в open-source проектах (как собрать статистику ?)
+
+Проверки STL, в т.ч. индексации и итераторов (`_GLIBCXX_ASSERTIONS` в GCC, `_LIBCPP_HARDENING_MODE` в Clang):
+  - TODO: суть
+  - TODO: пример ошибки
+  - TODO: целевые уязвимости и распространённость (анализ CVE/KVE)
+  - TODO: история (optional)
+  - TODO: возможные расширения
+  - TODO: эквивалентные отладочные проверки
+  - TODO: оверхед
+    * процитировать известные результаты
+    * использовать один и тот же бенч
+  - TODO: проблемы:
+    * false positives и false negatives (искать "bypassing FEATURE")
+    * поддержка динамических библиотек
+    * поддержка на разных платформах
+  - TODO: сравнение с безопасными языками
+    * Rust
+  - TODO: как включить
+    * опции и макросы компилятора с подробным пояснением и примерами
+    * ограничения на динамическую линковку
+    * поддержка в дистрибутивах и тулчейнах
+  - ссылка на хорошую статью
+  - TODO: использование в open-source проектах (как собрать статистику ?)
 
 `-fhardened`:
   - зонтичная опция для всех hardened-оптимизаций

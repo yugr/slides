@@ -50,7 +50,7 @@ Time: 15 мин.
 
 Assignee: Юрий
 
-Effort: 13h
+Effort: 17h
 
 ## Методология
 

@@ -44,6 +44,12 @@
   - ссылка на хорошую статью
   - использование в реальных проектах (дистрах, браузерах и т.д.)
 
+Бенчмаркинг:
+  - тестировалась компиляция самого тяжелого файла (`CGBuiltin.cpp`) с помощью Clang llvmorg-20.1.7 с дефолтными флагами (`-O3 -DNDEBUG`)
+  - Intel(R) Xeon(R) CPU E5-2620 v3 @ 2.40GHz (дефолтные настройки)
+  - ОС Debian 12 (bookworm)
+  - [скрипты запуска](bench)
+
 TODO: прочитать:
   - https://fedoraproject.org/wiki/Security_Features_Matrix
   - https://wiki.debian.org/HardeningWalkthrough#Selecting_security_hardening_options

@@ -121,7 +121,7 @@ Heap overflow атаки:
   * некоторые коммерческие тулчейны также рандомизируют порядок функций при линковке (Safe Compiler)
   * Moving Target Defense динамически переупорядочивает сегменты в рантайме
 - оверхед:
-  * TODO: померять дефолтный бенч
+  * нет оверхеда при замерах на Clang
 - сравнение с безопасными языками:
   * та же техника используется в Rust
 - как включить:
@@ -206,7 +206,7 @@ Heap overflow атаки:
   * may take over 10% on hot paths:
     + [virtio](https://patchwork-proxy.ozlabs.org/project/qemu-devel/patch/20250604191843.399309-1-stefanha@redhat.com/)
     + [Chrome](https://issues.chromium.org/issues/40633061#comment142)
-  * TODO: померять дефолтный бенч
+  * 4.5% оверхед на Clang (67 сек. -> 70 сек. на CGBuiltin.cpp)
 - проблемы
   * TODO: FP и FN
   * существенный оверхед
@@ -243,8 +243,9 @@ Heap overflow атаки:
 - эквивалентные отладочные проверки:
   * не существуют (ни Valgrind, ни санитары не защищают от перезаписи GOT)
 - оверхед
+  * замедляет только старт приложения
   * известные результаты не найдены
-  * TODO: померять дефолтный бенч
+  * оверхед на Clang не обнаружен
 - проблемы:
   * TODO: FP и FN
   * замедленное время стартапа (на разрешение символов)
@@ -328,7 +329,7 @@ Heap overflow атаки:
   * известные результаты:
     + [`-fstack-protector-all` 0-9%](https://static.googleusercontent.com/media/research.google.com/en//pubs/archive/43809.pdf)
     + [`-fstack-protector-strong` no overhead](https://zatoichi-engineer.github.io/2017/10/04/stack-smashing-protection.html)
-  * TODO: померять дефолтный бенч
+  * 2% оверхед на Clang (67 сек. -> 68.5 сек. на CGBuiltin.cpp)
 - проблемы
   * TODO: FP и FN
   * уязвим к info leakage (если канарейка утекла, то защита неэффективна)
@@ -366,7 +367,7 @@ Heap overflow атаки:
 - эквивалентные отладочные проверки: не существует
 - оверхед
   * [нет регрессий на Firefox](https://blog.llvm.org/posts/2021-01-05-stack-clash-protection/)
-  * TODO: померять дефолтный бенч
+  * нет оверхеда на Clang
 - TODO: проблемы (FP и FN)
 - сравнение с безопасными языками
   * в Rust stack probing включён по умолчанию (по крайней мере на x86)
@@ -462,7 +463,8 @@ Heap overflow атаки:
   * UBsan/Isan может использоваться и как отладочный инструмент
 - оверхед:
   * [до 50% на SPEC](https://arxiv.org/pdf/1711.08108)
-  * TODO: померять дефолтный бенч
+  * 9% оверхед на Clang (67 сек. -> 73 сек. на CGBuiltin.cpp)
+    + TODO: перемерять
 - TODO: проблемы (false positives и false negatives)
 - сравнение с безопасными языками:
   * в Rust проверки признаны достаточно дорогоми и редкими,
@@ -574,7 +576,7 @@ Heap overflow атаки:
       для `memcpy_chk`, `memmove_chk`, `memset_chk`, но этого мало
 - оверхед:
   * [`_FORTIFY_SOURCE=2` gives 3% ffmpeg overhead](https://zatoichi-engineer.github.io/2017/10/06/fortify-source.html)
-  * TODO: померять дефолтный бенч (проверить `-D_FORTIFY_SOURCE=2` и `-D_FORTIFY_SOURCE=3`)
+  * 2% на Clang (67 сек. -> 68.5 сек. на CGBuiltin.cpp, `-D_FORTIFY_SOURCE=2`)
 - TODO: проблемы:
   * false positives
   * false negatives

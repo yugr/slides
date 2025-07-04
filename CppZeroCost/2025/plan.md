@@ -26,7 +26,11 @@ Assignee: Роман
 - чем он отличается от asan/valgrind/fuzzing
   * достаточно дешёвые проверки
   * более дорогие проверки должны делаться в QA (sanitizers, valgrind, static analysis, fuzzing, etc.)
-  * замеры asan vs libc++ checks, `_FORTIFY_SOURCE`, stack protector vs normal
+  * замеры normal vs hardening (libc++ checks, `_FORTIFY_SOURCE`, stack protector) vs Asan:
+    + Stack Protector: 2%
+    + Fortify (`_FORTIFY_SOURCE=3`): 2%
+    + libc++ checks (`_GLIBCXX_ASSERTIONS`): 3.5%
+    + Asan: 4.7x
 
 TODO:
   - в расширенном смысле харденинг - интегральная активность: правила безопасной разработки + ограничения на деплой + проверки в рантайме (в компиляторе, библиотеках, ядре ОС) + настройки ОС

@@ -1,6 +1,6 @@
 A simple benchmark for hardening options which runs Clang on huge slow files.
 
-1) Clone LLVM and checkout llvmorg-20.1.7 tag.
+1) Clone LLVM, checkout llvmorg-20.1.7 tag and apply patch.
 
 TODO: prepare sources in `run.sh` ?
 

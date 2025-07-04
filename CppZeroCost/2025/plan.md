@@ -426,7 +426,7 @@ Heap overflow атаки:
   * известные результаты:
     + [3-10% performance loss due to `-fno-strict-aliasing`](https://docs.lib.purdue.edu/cgi/viewcontent.cgi?article=1124&context=ecetr) (очень старое исследование)
     + [слабое отрицательное влияние `-fno-strict-aliasing`](https://llvm.org/devmtg/2023-05/slides/Posters/05-Popescu-PerformanceImpactOfExploitingUndefinedBehavior.pdf)
-  * TODO: использовать один и тот же бенч
+  * 4.5% оверхед на Clang (67 сек. -> 70 сек. на CGBuiltin.cpp)
 - сравнение с безопасными языками
   * Rust:
     + strict overflow всегда defined (паника или wrap around)
@@ -464,8 +464,7 @@ Heap overflow атаки:
   * UBsan/Isan может использоваться и как отладочный инструмент
 - оверхед:
   * [до 50% на SPEC](https://arxiv.org/pdf/1711.08108)
-  * 9% оверхед на Clang (67 сек. -> 73 сек. на CGBuiltin.cpp)
-    + TODO: перемерять
+  * 3x оверхед на Clang (69 сек. -> 204 сек. на CGBuiltin.cpp)
 - TODO: проблемы (false positives и false negatives)
 - сравнение с безопасными языками:
   * в Rust проверки признаны достаточно дорогоми и редкими,
@@ -501,7 +500,7 @@ Heap overflow атаки:
 - эквивалентные отладочные проверки: Asan
 - оверхед:
   * [0.1% SafeStack](https://clang.llvm.org/docs/SafeStack.html)
-  * TODO: померять дефолтный бенч
+  * 3% на Clang (69 сек. -> 71 сек. на CGBuiltin.cpp)
 - проблемы:
   * TODO: false positives
   * false negatives: https://www.blackhat.com/docs/eu-16/materials/eu-16-Goktas-Bypassing-Clangs-SafeStack.pdf
@@ -647,7 +646,7 @@ Heap overflow атаки:
   * [0.3% in Google server systems](https://security.googleblog.com/2024/11/retrofitting-spatial-safety-to-hundreds.html)
     + важно: [требуется поддержка ThinLTO и PGO](https://www.reddit.com/r/cpp/comments/1hzj1if/comment/m6vpzh4)
       иначе [можно ожидать 4x](https://bughunters.google.com/blog/6368559657254912/llvm-s-rfc-c-buffer-hardening-at-google)
-  * TODO: померять дефолтный бенч
+  * 3.5% на Clang (67 сек. -> 69.5 сек. на CGBuiltin.cpp)
 - TODO: проблемы:
   * false positives и false negatives (искать "bypassing FEATURE")
   * поддержка динамических библиотек

@@ -29,12 +29,11 @@ Assignee: Роман
   * замеры asan vs libc++ checks, `_FORTIFY_SOURCE`, stack protector vs normal
 
 TODO:
-  - обеспечение security и safety программной системы: интегральная активность
-    * [Linux Hardening Guide](https://madaidans-insecurities.github.io/guides/linux-hardening.html)
-  - в расширенном смысле харденинг - интегральная активность: правила безопасной разработки + ограничения на деплой + проверки в рантайме (в компиляторе, библиотеках, ядре ОС)
+  - в расширенном смысле харденинг - интегральная активность: правила безопасной разработки + ограничения на деплой + проверки в рантайме (в компиляторе, библиотеках, ядре ОС) + настройки ОС
     * правила безопасной разработки (и тестирования):
-      + допустимые API (запрет `gets`, предпочтение `memset_s` и т.п.)
-      + static analysis (в т.ч. обязательные варнинги помимо стандартных `-Wall -Wextra -Werror`, например `-Wformat=2 -Wconversion=2`, контракты)
+      + пример интегрального подхода: [Linux Hardening Guide](https://madaidans-insecurities.github.io/guides/linux-hardening.html)
+      + допустимые API (запрет `gets` и `rand`, предпочтение `memset_s` и т.п.)
+      + static analysis (в т.ч. обязательные варнинги помимо стандартных `-Wall -Wextra -Werror`, например `-Wformat=2 -Wconversion=2`, в Visual Studio есть спец. флаг `/sdl` для таких варнингов, контракты)
       + доп. проверки (asserts, контракты и т.п.)
       + пример неудачного внедения безопасных практик: [Updated Field Experience With Annex K — Bounds Checking Interfaces](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n1969.htm (2015))
     * безопасный деплой:
@@ -162,6 +161,8 @@ Heap overflow атаки:
       она делала стек исполняемым
     + можно использовать `scanelf -lpqe` для поиска
 - расширения:
+  * раньше был PaX патч для `-Wl,noexecheap` (`pt-pax-flags.patch`),
+    но динамическая память в Glibc и так noexec с доисторических времён
   * запрет исполнения не только для стека, но и для любых writable-сегментов
     + heap, static data
     + общее название идеи: W^X
@@ -176,9 +177,9 @@ Heap overflow атаки:
       ```
     + линкер включит noexecstack если все объектные файлы это разрешают
     + execstack требуется для ассемблерных файлов (в некоторых просто забыли указать
-      директиву) и для GNU nested functions ([раньше](https://sourceware.org/bugzilla/show_bug.cgi?id=27220)
-      использовались в Glibc)
-      - TODO: почему использование Glibc не приводило к execstack ?
+      директиву) и для указателей на GNU nested functions
+      ([раньше](https://sourceware.org/bugzilla/show_bug.cgi?id=27220) использовались в Glibc)
+      - отметим что важно именно взятие указателя от nested function
   * если линкер не справился то можно воспользоваться
     + опцией `-Wl,-z,noexecstack` в GCC/Clang, `/NXCOMPAT` в Visual Studio
     + отключить execstack в готовой программе с помощью утилиты `execstack(8)`
@@ -683,7 +684,8 @@ Heap overflow атаки:
     + TODO
   * Glibc
     + pointer encryption - XOR всех указателей на функции с канарейкой
-    + TODO: Glibc heap protector
+    + можно вызвать в начале программы [функцию mcheck](https://www.gnu.org/software/libc/manual/html_node/Heap-Consistency-Checking.html)
+      для усиленных проверок heap consistency
 - TODO: пример ошибки
 - целевые уязвимости и распространённость:
   * heap overflow

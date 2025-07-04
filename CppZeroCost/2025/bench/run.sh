@@ -6,10 +6,11 @@ set -x
 # llvmorg-20.1.7
 LLVM=$HOME/src/llvm-project
 B=./build
-J=$(($(nproc) / 2))
+J=$((($(nproc) + 1)/ 2))
 #CC=g++
 OUT=./results
 REPEAT=3
+V=0
 
 usage() {
   cat <<EOF
@@ -96,9 +97,8 @@ while read cfg; do
 
   name=$(echo "$cfg" | awk -F: '{print $1}')
 
-  if test -d $OUT/$name; then
-    rm -f $OUT/$name/*.log
-  fi
+  mkdir -p $OUT/$name
+  rm -f $OUT/$name/*.log
 done < "$CONFIG"
 
 tmp=$(mktemp)
@@ -134,11 +134,13 @@ while read cfg; do
 
   rm -rf "$B"
 
-  # We need to set CMAKE_C_COMPILER even though we don't use it
-  # because Cmake needs it for config tests...
+  # 1) We need to set CMAKE_C_COMPILER even though we don't use it
+  #   because Cmake needs it for config tests...
+  # 2) No need to pass "-O2 -DNDEBUG" because they will be overridden
+  #   by default CMAKE_CXX_FLAGS_RELEASE (-O3 -DNDEBUG)
   cmake -G Ninja \
     -DCMAKE_C_COMPILER=$cc -DCMAKE_CXX_COMPILER=$cxx -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_CXX_FLAGS="-O2 -DNDEBUG $cxxflags" -DCMAKE_EXE_LINKER_FLAGS="$ldflags" \
+    -DCMAKE_CXX_FLAGS="$cxxflags" -DCMAKE_EXE_LINKER_FLAGS="$ldflags" \
     $llvmflags \
     -DLLVM_ENABLE_WARNINGS=OFF -DLLVM_ENABLE_LLD=ON -DLLVM_PARALLEL_LINK_JOBS=1 -DLLVM_APPEND_VC_REV=OFF \
     -DLLVM_TARGETS_TO_BUILD=X86 -DLLVM_ENABLE_PROJECTS=clang \

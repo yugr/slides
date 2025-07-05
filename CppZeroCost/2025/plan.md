@@ -54,7 +54,7 @@ Time: 15 мин.
 
 Assignee: Юрий
 
-Effort: 21h
+Effort: 28h
 
 ## Атаки (exploits)
 
@@ -368,8 +368,7 @@ Heap overflow атаки:
   * 3% на Clang (69 сек. -> 71 сек. на CGBuiltin.cpp)
 - проблемы:
   * false positives: неизвестны
-  * false negatives:
-    + TODO: https://www.blackhat.com/docs/eu-16/materials/eu-16-Goktas-Bypassing-Clangs-SafeStack.pdf
+  * false negatives: неизвестны
   * в `-fsanitize=safe-stack` нет поддержки проверок в динамических библиотеках
     + их можно использовать, но они не будут использовать ShadowStack
     + возможно [поддержать их несложно](https://github.com/ossf/wg-best-practices-os-developers/issues/267#issuecomment-1835359166)
@@ -532,16 +531,40 @@ Heap overflow атаки:
 - скорее всего эти проверки станут частью Стандарта (через механизм профилей)
   * инструменты для миграции уже есть ([Safe Buffers](https://discourse.llvm.org/t/rfc-c-buffer-hardening/65734))
   * caveat: [Updated Field Experience With Annex K — Bounds Checking Interfaces](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n1969.htm (2015))
-- TODO: пример ошибки
+- пример ошибки
+  ```
+  $ cat repro.cc
+  #include <stdio.h>
+  #include <vector>
+
+  int main() {
+    std::vector<int> v;
+    asm("" :: "r"(&v) : "memory");
+    return v[4096];
+   }
+
+  $ g++ tmp.cc
+  $ ./a.out
+  Segmentation fault
+
+  $ g++ -D_GLIBCXX_ASSERTIONS tmp.cc
+  $ ./a.out
+  /usr/include/c++/12/bits/stl_vector.h:1123: std::vector<_Tp, _Alloc>::reference std::vector<_Tp, _Alloc>::operator[](size_type) [with _Tp = int; _Alloc = std::allocator<int>; reference = int&; size_type = long unsigned int]: Assertion '__n < this->size()' failed.
+Aborted
+  ```
 - целевые уязвимости и распространённость:
   * индексные проверки предотвращают buffer overflow (см. статистику выше)
   * остальных проверок так много что трудно идентифицировать конкретные CVE
-- TODO: история (optional)
+- история:
+  * GCC debug containers (начало 2000-х)
+  * опция `_GLIBCXX_ASSERTIONS` для hardening (2015, commit 2f1e8e7c)
+  * libc++ и Safe Buffers proposal (2022)
+  * далее видимо STL hardening станет составной частью C++ профилей
 - возможные расширения:
   * компиляторы поддерживают также ABI-breaking флаги, которые намного сильнее замедляют рантайм
   * рекомендуется включать их в QA-сборках
   * GCC: `-D_GLIBCXX_DEBUG` (надмножество `_GLIBCXX_ASSERTIONS`, несовместимо по ABI => требуется перекомпиляция C++-зависимостей)
-  * Clang: `-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_DEBUG`
+  * Clang: [доп. макросы](https://libcxx.llvm.org/Hardening.html#abi) например для проверок итераторов (`_LIBCPP_ABI_BOUNDED_ITERATORS`, etc.)
   * Visual Studio: `/D_ITERATOR_DEBUG_LEVEL=1` (говорят может менять ABI,
     т.е. потребуется пересборка всех зависимостей,
     но в [коде](https://github.com/microsoft/STL) этого не видно)
@@ -552,10 +575,11 @@ Heap overflow атаки:
     + важно: [требуется поддержка ThinLTO и PGO](https://www.reddit.com/r/cpp/comments/1hzj1if/comment/m6vpzh4)
       иначе [можно ожидать 4x](https://bughunters.google.com/blog/6368559657254912/llvm-s-rfc-c-buffer-hardening-at-google)
   * 3.5% на Clang (67 сек. -> 69.5 сек. на CGBuiltin.cpp)
-- TODO: проблемы:
-  * false positives и false negatives (искать "bypassing FEATURE")
-  * поддержка динамических библиотек
-  * поддержка на разных платформах
+- проблемы:
+  * false positives: неизвестны
+  * false negatives:
+    + покрывает только подмножество ошибок (некорректные индексы, только STL)
+    + некоторые ошибки обнаруживать слишком дорого (например ошибки в итераторах)
 - сравнение с безопасными языками
   * в Rust аналогичные проверки делаются всегда
 - как включить:
@@ -852,7 +876,8 @@ Heap overflow атаки:
     * проблемы при немонолитное иерархии (дети в других dso), нужна спец опция и перф оверхед)
     * новые аппаратные проверки (ARM PAC, ARM BTI ~ Intel IBT (часть Intel CET))
       + включаются по `-mbranch-protection`
-    * also `-fcf-protection` and https://learn.microsoft.com/en-us/windows/win32/secbp/control-flow-guard
+    * also `-fcf-protection`
+    * also https://learn.microsoft.com/en-us/windows/win32/secbp/control-flow-guard
   - Stack scrubbing (`-fstrub`)
   - `-fzero-call-used-regs` (https://www.semanticscholar.org/paper/Clean-the-Scratch-Registers%3A-A-Way-to-Mitigate-Rong-Xie/6f2ce4fd31baa0f6c02f9eb5c57b90d39fe5fa13)
   - ARM Memory Tagging Extensions

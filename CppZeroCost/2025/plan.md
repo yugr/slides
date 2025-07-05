@@ -232,114 +232,6 @@ Heap overflow атаки:
     + `for f in /usr/bin/* /usr/sbin/*; do if checksec --file=$f | grep -q 'No PIE'; then echo $f; fi; done`
     + в том числе `/usr/bin/pytho3` :(
 
-## Автоматическая инициализация
-
-- инициализация всех локальных переменных (нулями для hardening, случайными значениями для debug)
-- TODO: пример ошибки
-- TODO: история
-- TODO: расширения
-- TODO: что будет в C++26 (@Роман):
-  * `[[indeterminate]]`
-  * [P2795](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2023/p2795r3.html)
-  * [P2723](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2023/p2723r1.html)
-- эквивалентные отладочные проверки: Msan, Valgrind, [DirtyFrame](https://github.com/yugr/DirtyFrame)
-- целевые уязвимости и распространённость:
-  * около 50 uninitialized variable CVE в 2024 (1% от buffer overflow CVE)
-  * TODO: KEV
-- оверхед:
-  * [1% на Firefox](https://serge-sans-paille.github.io/pythran-stories/trivial-auto-var-init-experiments.html)
-  * may take over 10% on hot paths:
-    + [virtio](https://patchwork-proxy.ozlabs.org/project/qemu-devel/patch/20250604191843.399309-1-stefanha@redhat.com/)
-    + [Chrome](https://issues.chromium.org/issues/40633061#comment142)
-  * 4.5% оверхед на Clang (67 сек. -> 70 сек. на CGBuiltin.cpp)
-- проблемы
-  * TODO: FP и FN
-  * существенный оверхед
-  * ломает обнаружение багов в Valgrind и Msan
-  * инициализация нулями не всегда даёт осмысленный результат (мы скорее скрываем проблему, а не фиксим)
-  * применяется только к локальным переменным (глобальные и так инициализируются, для кучи можно использовать Scudo hardened allocator)
-- сравнение с безопасными языками
-  * Rust заставляет программиста инициализировать переменные (или явно использовать враппер `MaybeUninit`)
-  * Java заставляет программиста инициализировать локальные переменные (динамическая память гарантированно зануляется)
-- как включить:
-  * флаг `-ftrivial-auto-var-init=zero` (GCC, Clang), [скрытый](https://lectem.github.io/msvc/reverse-engineering/build/2019/01/21/MSVC-hidden-flags.html) [флаг](https://msrc.microsoft.com/blog/2020/05/solving-uninitialized-stack-memory-on-windows/) `-initall` (Visual Studio)
-- TODO: использование в реальных проектах
-  * не включён по умолчанию ни в одном дистро
-
-## Защита таблиц диспетчеризации
-
-- вызовы функции из динамических библиотек делаются через PLT-stubs
-  * даже если библиотека вызывает свои собственные функции (см. доклад про оптимизации)
-  * PLT stubs читают и обновляют таблицу указателей на функции
-  * таблицу приходится держать в writable-сегменте => у хакеров есть возможность её модифицировать
-  * флаги линкера `-Wl,-z,now -Wl,-z,relro` (т.н. "Full RELRO") заставляют дин. загрузчик
-    + инициализировать содержимое таблиц на старте программы (`-z,now`)
-    + пометить сегмент readonly (`-z,relro`)
-  * доп. преимущество - нет проблемы с отложенными ошибками ненайденных символов
-- TODO: пример ошибки
-- история:
-  * подход RELRO уже использовался ранее для однократно инициализируемых таблиц (vtables)
-    + см. [статью Ian Lance Taylor](https://www.airs.com/blog/archives/189)
-  * потребовалась лишь небольшая адаптация для GOT
-- целевые уязвимости и распространённость: соответствующие CVE не найдены
-  * более редкая атака чем buffer overflow, но вполне реальная:
-    + смещение GOT/PLT известно
-    + хакер с помощью ROP может поменять их и сделать return-to-plt
-- эквивалентные отладочные проверки:
-  * не существуют (ни Valgrind, ни санитары не защищают от перезаписи GOT)
-- оверхед
-  * замедляет только старт приложения
-  * известные результаты не найдены
-  * оверхед на Clang не обнаружен
-- проблемы:
-  * TODO: FP и FN
-  * замедленное время стартапа (на разрешение символов)
-  * некоторые программы могут сломаться (если в них были отсутствующие символы, которые не вызывались)
-  * пользовательские таблицы функций не защищены (важно ли это ?)
-- сравнение с безопасными языками
-  * Rust [использует](https://github.com/rust-lang/rust/issues/29877) Full RELRO
-- как включить
-  * указать опции линкера: `-Wl,-z,now -Wl,-z,relro`
-  * поддержка в дистрибутивах и тулчейнах:
-    + Debian: не включены по умолчанию ни в GCC, ни в Clang
-    + Ubuntu: включены по умолчанию в GCC, но только `-z relro` в Clang (partial RELRO)
-    + Fedora: не включены по умолчанию ни в GCC, ни в Clang
-- ссылка на статью:
-  * https://www.redhat.com/en/blog/hardening-elf-binaries-using-relocation-read-only-relro
-- использование в реальных проектах
-  * Debian: пакеты дефолтно [собираются с partial RELRO](https://wiki.debian.org/HardeningWalkthrough#Selecting_security_hardening_options)
-  * Fefora: пакеты дефолтно [собираются с full RELRO](https://fedoraproject.org/wiki/Security_Features_Matrix#Built_with_RELRO))
-  * Ubuntu: пакеты дефолтно собираются с full RELRO
-
-## Уменьшение зависимостей
-
-- часто программа линкует лишние библиотеки (например из-за устаревших билдскриптов)
-- от них можно избавиться без ручной модификации Makefiles с помощью флагов `-Wl,--as-needed`
-  * [иногда](https://best.openssf.org/Compiler-Hardening-Guides/Compiler-Options-Hardening-Guide-for-C-and-C++.html#allow-linker-to-omit-libraries-specified-on-the-command-line-to-link-against-if-they-are-not-used)
-    также рекомендуют флаг `-Wl,--no-copy-dt-needed-entries`, но во-первых он не влияет на безопасность,
-    а во-вторых и так включён по умолчанию в современных линкерах
-- обычно эти опции используют только для ускорения стартапа, но у них есть вторичный эффект:
-  * уменьшается число доступных хакеру библиотек (для поиска гаджетов)
-- могут быть полезны против всех stack overflow атак, полагающихся на ROP
-- TODO: целевые уязвимости и распространённость (анализ CVE):
-- эквивалентные отладочные проверки: те же что у неисполняемого стека
-- TODO: история
-- TODO: расширения
-- оверхед: отсутствует (наоборот, стартап может ускориться)
-- проблемы:
-  * TODO: FP и FN
-  * могут сломаться некоторые программы
-    + например которые использовали символы отброшенных либ с помощью `dlsym`
-- сравнение с безопасными языками
-  * Rust компилируется только с `--as-needed` (как и GCC/Clang)
-- как включить
-  * опция линкера `-Wl,--as-needed`
-  * включена по умолчанию в GCC в Debian и Ubuntu, но не в Fedora
-  * не включена по умолчанию в Clang нигде
-- ссылка на хорошую статью: https://wiki.gentoo.org/wiki/Project:Quality_Assurance/As-needed
-- использование в реальных проектах:
-  * пакеты в Fedora дефолтно собираются с `--as-needed` (а также Debian и Ubuntu)
-
 ## Stack Protector
 
 - рядом с return address на стеке размещается специальное случайное число ("канарейка")
@@ -432,105 +324,6 @@ Heap overflow атаки:
 - TODO: использование в реальных проектах
   * пакеты Fedora (и Ubuntu) дефолтно собираются с `-fstack-clash-protection`
   * пакеты Debian [похоже](https://github.com/jvoisin/compiler-flags-distro/issues/12) собираются пока без этого флага
-
-## Отключение агрессивных оптимизаций
-
-- некоторые компиляторы могут излишне агрессивно
-  реагировать на код, содержащий неочевидные для программиста ошибки,
-  и генерировать очень небезопасный ассемблер
-  (в основном выбрасывать пользовательские проверки)
-- Compiler Introduced Security Bugs
-  * термин введён в статье "Silent Bugs Matter: A Study of Compiler-Introduced Security Bugs"
-  * статья "Towards Optimization-Safe Systems: Analyzing the Impact of Undefined Behavior"
-- для кода с повышенными требованиями безопасности рекомендуется
-  отключать такие оптимизации
-- пример из Linux kernel: компилятор удалил проверку на NULL:
-  ```
-  static void __devexit agnx_pci_remove (struct pci_dev *pdev)
-  {
-    struct ieee80211_hw *dev = pci_get_drvdata(pdev);
-    struct agnx_priv *priv = dev->priv;
-
-    if (!dev) return;
-
-    ... do stuff using dev ...
-  }
-  ```
-- Visual Studio [менее агрессивен](https://devblogs.microsoft.com/cppblog/new-code-optimizer/)
-  чем GCC/Clang
-- обычно отключают:
-  * `-fno-delete-null-pointer-checks`, `-fno-strict-overflow`, `-fno-strict-aliasing` (GCC/Clang)
-  * [`d2SSAOptimizerUndefinedIntOverflow-`](https://devblogs.microsoft.com/cppblog/new-code-optimizer/) (Visual Studio)
-- целевые уязвимости и распространённость:
-  * CVE по этой фиче очень мало (например [CVE-2009-1897](https://nvd.nist.gov/vuln/detail/CVE-2009-1897)),
-    но в статьях находят сотни CISB в open-source коде:
-    + "Silent Bugs Matter: A Study of Compiler-Introduced Security Bugs"
-    + "Towards Optimization-Safe Systems: Analyzing the Impact of Undefined Behavior"
-- TODO: история (optional)
-- возможные расширения:
-  * иногда рекомендуют флаг `-fwrapv`, но он плохо поддерживается
-    (баги [не фиксят десятилетиями](https://gcc.gnu.org/bugzilla/show_bug.cgi?id=30484))
-- эквивалентные отладочные проверки: UBsan/Isan (strict overflow), TySan (strict aliasing)
-  * ссылка на Ромин доклад
-- оверхед
-  * известные результаты:
-    + [3-10% performance loss due to `-fno-strict-aliasing`](https://docs.lib.purdue.edu/cgi/viewcontent.cgi?article=1124&context=ecetr) (очень старое исследование)
-    + [слабое отрицательное влияние `-fno-strict-aliasing`](https://llvm.org/devmtg/2023-05/slides/Posters/05-Popescu-PerformanceImpactOfExploitingUndefinedBehavior.pdf)
-  * 4.5% оверхед на Clang (67 сек. -> 70 сек. на CGBuiltin.cpp)
-- сравнение с безопасными языками
-  * Rust:
-    + strict overflow всегда defined (паника или wrap around)
-    + strict aliasing невозможен по правилам языка
-    + нулевые указатели невозможны в safe-коде
-- как включить:
-  * флаги выключены по умолчанию во всех компиляторах и дистрибутивах
-    + многие пакеты в дистрах собираются с `-fno-strict-aliasing`
-      (т.к. правила алиасинга особенно легко нарушить)
-- ссылки на статьи:
-  * [обсуждение `-fwrapv` в Firefox](https://bugzilla.mozilla.org/show_bug.cgi?id=1031653)
-  * [Security flaws caused by compiler optimizations](https://www.redhat.com/en/blog/security-flaws-caused-compiler-optimizations)
-  * https://my.eng.utah.edu/~cs5785/slides-f10/Dangerous+Optimizations.pdf
-- TODO: использование в реальных проектах
-
-## Проверки целочисленного переполнения
-
-- суть проверки:
-  * существующие отладочные инструменты для проверки переполнения
-    (UBsan и Isan) имеют достаточно низкий оверхед
-  * их использование в проде затруднено, т.к. они используют
-    большой рантайм, открывающий новые возможности для атаки
-  * решение: использование "Ubsan minimal runtime"
-    (немедленный аборт программы)
-- TODO: пример ошибки
-- TODO: целевые уязвимости и распространённость (анализ CVE/KVE):
-  * CVE/KVE по integer overflow достаточно мало
-  * два канонических примера: инцидент с облучателем Therac-25 и катастрофа ракеты Ariane 5
-- TODO: история (optional)
-- возможные расширения
-  * помимо UBsan рекомендуется включать Isan (надо будет отключить инструментацию в STL RNG,
-    там ест intentional unsigned overflow)
-  * `-ftrapv`
-- эквивалентные отладочные проверки:
-  * UBsan/Isan может использоваться и как отладочный инструмент
-- оверхед:
-  * [до 50% на SPEC](https://arxiv.org/pdf/1711.08108)
-  * 3x оверхед на Clang (69 сек. -> 204 сек. на CGBuiltin.cpp)
-- TODO: проблемы (false positives и false negatives)
-- сравнение с безопасными языками:
-  * в Rust проверки признаны достаточно дорогоми и редкими,
-    поэтому по умолчанию они отключены в release;
-    более того, некоторые операции (например приведения типов)
-    вообще не проверяются
-  * в Swift проверки переполнения включены по умолчанию
-- как включить
-  * Clang: `-fsanitize=undefined -fsanitize-minimal-runtime` (рекомендую также добавлять `integer`)
-  * GCC: `-fsanitize-trap=undefined` (`integer` не поддержан в GCC)
-- TODO: ссылка на хорошую статью
-- использование в реальных проектах
-  * не используется в дистрах
-  * используется в Android media stack:
-    + https://android-developers.googleblog.com/2016/05/hardening-media-stack.html
-    + https://android-developers.googleblog.com/2018/06/compiler-based-security-mitigations-in.html
 
 ## Разделение стеков
 
@@ -767,6 +560,213 @@ Heap overflow атаки:
   * Firefox [использует](https://madaidans-insecurities.github.io/firefox-chromium.html#memory-allocator-hardening)
     не-hardened аллокатор
   * GrapheneOS использует hardned_malloc
+
+## Защита таблиц диспетчеризации
+
+- вызовы функции из динамических библиотек делаются через PLT-stubs
+  * даже если библиотека вызывает свои собственные функции (см. доклад про оптимизации)
+  * PLT stubs читают и обновляют таблицу указателей на функции
+  * таблицу приходится держать в writable-сегменте => у хакеров есть возможность её модифицировать
+  * флаги линкера `-Wl,-z,now -Wl,-z,relro` (т.н. "Full RELRO") заставляют дин. загрузчик
+    + инициализировать содержимое таблиц на старте программы (`-z,now`)
+    + пометить сегмент readonly (`-z,relro`)
+  * доп. преимущество - нет проблемы с отложенными ошибками ненайденных символов
+- TODO: пример ошибки
+- история:
+  * подход RELRO уже использовался ранее для однократно инициализируемых таблиц (vtables)
+    + см. [статью Ian Lance Taylor](https://www.airs.com/blog/archives/189)
+  * потребовалась лишь небольшая адаптация для GOT
+- целевые уязвимости и распространённость: соответствующие CVE не найдены
+  * более редкая атака чем buffer overflow, но вполне реальная:
+    + смещение GOT/PLT известно
+    + хакер с помощью ROP может поменять их и сделать return-to-plt
+- эквивалентные отладочные проверки:
+  * не существуют (ни Valgrind, ни санитары не защищают от перезаписи GOT)
+- оверхед
+  * замедляет только старт приложения
+  * известные результаты не найдены
+  * оверхед на Clang не обнаружен
+- проблемы:
+  * TODO: FP и FN
+  * замедленное время стартапа (на разрешение символов)
+  * некоторые программы могут сломаться (если в них были отсутствующие символы, которые не вызывались)
+  * пользовательские таблицы функций не защищены (важно ли это ?)
+- сравнение с безопасными языками
+  * Rust [использует](https://github.com/rust-lang/rust/issues/29877) Full RELRO
+- как включить
+  * указать опции линкера: `-Wl,-z,now -Wl,-z,relro`
+  * поддержка в дистрибутивах и тулчейнах:
+    + Debian: не включены по умолчанию ни в GCC, ни в Clang
+    + Ubuntu: включены по умолчанию в GCC, но только `-z relro` в Clang (partial RELRO)
+    + Fedora: не включены по умолчанию ни в GCC, ни в Clang
+- ссылка на статью:
+  * https://www.redhat.com/en/blog/hardening-elf-binaries-using-relocation-read-only-relro
+- использование в реальных проектах
+  * Debian: пакеты дефолтно [собираются с partial RELRO](https://wiki.debian.org/HardeningWalkthrough#Selecting_security_hardening_options)
+  * Fefora: пакеты дефолтно [собираются с full RELRO](https://fedoraproject.org/wiki/Security_Features_Matrix#Built_with_RELRO))
+  * Ubuntu: пакеты дефолтно собираются с full RELRO
+
+## Уменьшение зависимостей
+
+- часто программа линкует лишние библиотеки (например из-за устаревших билдскриптов)
+- от них можно избавиться без ручной модификации Makefiles с помощью флагов `-Wl,--as-needed`
+  * [иногда](https://best.openssf.org/Compiler-Hardening-Guides/Compiler-Options-Hardening-Guide-for-C-and-C++.html#allow-linker-to-omit-libraries-specified-on-the-command-line-to-link-against-if-they-are-not-used)
+    также рекомендуют флаг `-Wl,--no-copy-dt-needed-entries`, но во-первых он не влияет на безопасность,
+    а во-вторых и так включён по умолчанию в современных линкерах
+- обычно эти опции используют только для ускорения стартапа, но у них есть вторичный эффект:
+  * уменьшается число доступных хакеру библиотек (для поиска гаджетов)
+- могут быть полезны против всех stack overflow атак, полагающихся на ROP
+- TODO: целевые уязвимости и распространённость (анализ CVE):
+- эквивалентные отладочные проверки: те же что у неисполняемого стека
+- TODO: история
+- TODO: расширения
+- оверхед: отсутствует (наоборот, стартап может ускориться)
+- проблемы:
+  * TODO: FP и FN
+  * могут сломаться некоторые программы
+    + например которые использовали символы отброшенных либ с помощью `dlsym`
+- сравнение с безопасными языками
+  * Rust компилируется только с `--as-needed` (как и GCC/Clang)
+- как включить
+  * опция линкера `-Wl,--as-needed`
+  * включена по умолчанию в GCC в Debian и Ubuntu, но не в Fedora
+  * не включена по умолчанию в Clang нигде
+- ссылка на хорошую статью: https://wiki.gentoo.org/wiki/Project:Quality_Assurance/As-needed
+- использование в реальных проектах:
+  * пакеты в Fedora дефолтно собираются с `--as-needed` (а также Debian и Ubuntu)
+
+## Автоматическая инициализация
+
+- инициализация всех локальных переменных (нулями для hardening, случайными значениями для debug)
+- TODO: пример ошибки
+- TODO: история
+- TODO: расширения
+- TODO: что будет в C++26 (@Роман):
+  * `[[indeterminate]]`
+  * [P2795](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2023/p2795r3.html)
+  * [P2723](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2023/p2723r1.html)
+- эквивалентные отладочные проверки: Msan, Valgrind, [DirtyFrame](https://github.com/yugr/DirtyFrame)
+- целевые уязвимости и распространённость:
+  * около 50 uninitialized variable CVE в 2024 (1% от buffer overflow CVE)
+  * TODO: KEV
+- оверхед:
+  * [1% на Firefox](https://serge-sans-paille.github.io/pythran-stories/trivial-auto-var-init-experiments.html)
+  * may take over 10% on hot paths:
+    + [virtio](https://patchwork-proxy.ozlabs.org/project/qemu-devel/patch/20250604191843.399309-1-stefanha@redhat.com/)
+    + [Chrome](https://issues.chromium.org/issues/40633061#comment142)
+  * 4.5% оверхед на Clang (67 сек. -> 70 сек. на CGBuiltin.cpp)
+- проблемы
+  * TODO: FP и FN
+  * существенный оверхед
+  * ломает обнаружение багов в Valgrind и Msan
+  * инициализация нулями не всегда даёт осмысленный результат (мы скорее скрываем проблему, а не фиксим)
+  * применяется только к локальным переменным (глобальные и так инициализируются, для кучи можно использовать Scudo hardened allocator)
+- сравнение с безопасными языками
+  * Rust заставляет программиста инициализировать переменные (или явно использовать враппер `MaybeUninit`)
+  * Java заставляет программиста инициализировать локальные переменные (динамическая память гарантированно зануляется)
+- как включить:
+  * флаг `-ftrivial-auto-var-init=zero` (GCC, Clang), [скрытый](https://lectem.github.io/msvc/reverse-engineering/build/2019/01/21/MSVC-hidden-flags.html) [флаг](https://msrc.microsoft.com/blog/2020/05/solving-uninitialized-stack-memory-on-windows/) `-initall` (Visual Studio)
+- TODO: использование в реальных проектах
+  * не включён по умолчанию ни в одном дистро
+
+## Проверки целочисленного переполнения
+
+- суть проверки:
+  * существующие отладочные инструменты для проверки переполнения
+    (UBsan и Isan) имеют достаточно низкий оверхед
+  * их использование в проде затруднено, т.к. они используют
+    большой рантайм, открывающий новые возможности для атаки
+  * решение: использование "Ubsan minimal runtime"
+    (немедленный аборт программы)
+- TODO: пример ошибки
+- TODO: целевые уязвимости и распространённость (анализ CVE/KVE):
+  * CVE/KVE по integer overflow достаточно мало
+  * два канонических примера: инцидент с облучателем Therac-25 и катастрофа ракеты Ariane 5
+- TODO: история (optional)
+- возможные расширения
+  * помимо UBsan рекомендуется включать Isan (надо будет отключить инструментацию в STL RNG,
+    там ест intentional unsigned overflow)
+  * `-ftrapv`
+- эквивалентные отладочные проверки:
+  * UBsan/Isan может использоваться и как отладочный инструмент
+- оверхед:
+  * [до 50% на SPEC](https://arxiv.org/pdf/1711.08108)
+  * 3x оверхед на Clang (69 сек. -> 204 сек. на CGBuiltin.cpp)
+- TODO: проблемы (false positives и false negatives)
+- сравнение с безопасными языками:
+  * в Rust проверки признаны достаточно дорогоми и редкими,
+    поэтому по умолчанию они отключены в release;
+    более того, некоторые операции (например приведения типов)
+    вообще не проверяются
+  * в Swift проверки переполнения включены по умолчанию
+- как включить
+  * Clang: `-fsanitize=undefined -fsanitize-minimal-runtime` (рекомендую также добавлять `integer`)
+  * GCC: `-fsanitize-trap=undefined` (`integer` не поддержан в GCC)
+- TODO: ссылка на хорошую статью
+- использование в реальных проектах
+  * не используется в дистрах
+  * используется в Android media stack:
+    + https://android-developers.googleblog.com/2016/05/hardening-media-stack.html
+    + https://android-developers.googleblog.com/2018/06/compiler-based-security-mitigations-in.html
+
+## Отключение агрессивных оптимизаций
+
+- некоторые компиляторы могут излишне агрессивно
+  реагировать на код, содержащий неочевидные для программиста ошибки,
+  и генерировать очень небезопасный ассемблер
+  (в основном выбрасывать пользовательские проверки)
+- Compiler Introduced Security Bugs
+  * термин введён в статье "Silent Bugs Matter: A Study of Compiler-Introduced Security Bugs"
+  * статья "Towards Optimization-Safe Systems: Analyzing the Impact of Undefined Behavior"
+- для кода с повышенными требованиями безопасности рекомендуется
+  отключать такие оптимизации
+- пример из Linux kernel: компилятор удалил проверку на NULL:
+  ```
+  static void __devexit agnx_pci_remove (struct pci_dev *pdev)
+  {
+    struct ieee80211_hw *dev = pci_get_drvdata(pdev);
+    struct agnx_priv *priv = dev->priv;
+
+    if (!dev) return;
+
+    ... do stuff using dev ...
+  }
+  ```
+- Visual Studio [менее агрессивен](https://devblogs.microsoft.com/cppblog/new-code-optimizer/)
+  чем GCC/Clang
+- обычно отключают:
+  * `-fno-delete-null-pointer-checks`, `-fno-strict-overflow`, `-fno-strict-aliasing` (GCC/Clang)
+  * [`d2SSAOptimizerUndefinedIntOverflow-`](https://devblogs.microsoft.com/cppblog/new-code-optimizer/) (Visual Studio)
+- целевые уязвимости и распространённость:
+  * CVE по этой фиче очень мало (например [CVE-2009-1897](https://nvd.nist.gov/vuln/detail/CVE-2009-1897)),
+    но в статьях находят сотни CISB в open-source коде:
+    + "Silent Bugs Matter: A Study of Compiler-Introduced Security Bugs"
+    + "Towards Optimization-Safe Systems: Analyzing the Impact of Undefined Behavior"
+- TODO: история (optional)
+- возможные расширения:
+  * иногда рекомендуют флаг `-fwrapv`, но он плохо поддерживается
+    (баги [не фиксят десятилетиями](https://gcc.gnu.org/bugzilla/show_bug.cgi?id=30484))
+- эквивалентные отладочные проверки: UBsan/Isan (strict overflow), TySan (strict aliasing)
+  * ссылка на Ромин доклад
+- оверхед
+  * известные результаты:
+    + [3-10% performance loss due to `-fno-strict-aliasing`](https://docs.lib.purdue.edu/cgi/viewcontent.cgi?article=1124&context=ecetr) (очень старое исследование)
+    + [слабое отрицательное влияние `-fno-strict-aliasing`](https://llvm.org/devmtg/2023-05/slides/Posters/05-Popescu-PerformanceImpactOfExploitingUndefinedBehavior.pdf)
+  * 4.5% оверхед на Clang (67 сек. -> 70 сек. на CGBuiltin.cpp)
+- сравнение с безопасными языками
+  * Rust:
+    + strict overflow всегда defined (паника или wrap around)
+    + strict aliasing невозможен по правилам языка
+    + нулевые указатели невозможны в safe-коде
+- как включить:
+  * флаги выключены по умолчанию во всех компиляторах и дистрибутивах
+    + многие пакеты в дистрах собираются с `-fno-strict-aliasing`
+      (т.к. правила алиасинга особенно легко нарушить)
+- ссылки на статьи:
+  * [обсуждение `-fwrapv` в Firefox](https://bugzilla.mozilla.org/show_bug.cgi?id=1031653)
+  * [Security flaws caused by compiler optimizations](https://www.redhat.com/en/blog/security-flaws-caused-compiler-optimizations)
+  * https://my.eng.utah.edu/~cs5785/slides-f10/Dangerous+Optimizations.pdf
+- TODO: использование в реальных проектах
 
 ## `-fhardened`
 

@@ -54,7 +54,7 @@ Time: 15 мин.
 
 Assignee: Юрий
 
-Effort: 28h
+Effort: 29h
 
 ## Атаки (exploits)
 
@@ -102,6 +102,9 @@ Heap overflow атаки:
     * ~1% CVE и 1.5% KEV в 2024
     * [Mitre CWE Top 25 2024](https://cwe.mitre.org/top25/archive/2024/2024_cwe_top25.html): место 23
   - неинициализированные данные
+
+Некоторые указанные ниже методы можно детектировать в уже собранном приложении (или библиотеке)
+с помощью утилиты `checksec` (но не все).
 
 ## Неисполняемый стек
 
@@ -802,7 +805,26 @@ Aborted
 - оверхед:
   * [до 50% на SPEC](https://arxiv.org/pdf/1711.08108)
   * 3x оверхед на Clang (69 сек. -> 204 сек. на CGBuiltin.cpp)
-- TODO: проблемы (false positives и false negatives)
+- проблемы
+  - false positives:
+    * Isan может выдавать ложные срабатывания
+      (в частности нужен blacklist для кода в STL,
+       полагающегося на переполнение)
+  - false negatives:
+    * может не обнаруживать некоторые баги,
+      которые успел "перехватить" оптимизатор (особенно под `-O2`):
+      ```
+      // Helge Penne, Secure development with C++ - Lessons and techniques
+      #include <limits.h>
+
+      int foo() {
+        int x = INT_MAX;
+        int y = x + 1;
+        if (y > x)
+          return 1;
+        return 2;
+      }
+      ```
 - сравнение с безопасными языками:
   * в Rust проверки признаны достаточно дорогоми и редкими,
     поэтому по умолчанию они отключены в release;

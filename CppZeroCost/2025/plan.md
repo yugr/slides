@@ -91,6 +91,12 @@ Heap overflow атаки:
     * Log4Shell (уязвимость в безопасном языке из-за исполнения произвольного кода)
     * XZ Utils (социальная инженерия)
 
+Уязвимости кучи (heap errors):
+  - ~3.8% CVE и 7% KEV в 2024
+    * не учтены heap overflow CVEs, которые попали в buffer overflow
+  - [Mitre CWE Top 25 2024](https://cwe.mitre.org/top25/archive/2024/2024_cwe_top25.html): место 8
+    * не учтены heap overflow KEVs, которые попали в buffer overflow
+
 Другие виды уязвимостей:
   - integer overflow:
     * ~1% CVE и 1.5% KEV в 2024
@@ -615,12 +621,29 @@ Aborted
     + pointer encryption - XOR всех указателей на функции с канарейкой
     + можно вызвать в начале программы [функцию mcheck](https://www.gnu.org/software/libc/manual/html_node/Heap-Consistency-Checking.html)
       для усиленных проверок heap consistency
-- TODO: пример ошибки
+- пример ошибки
+  ```
+  $ cat repro.c
+  #include <string.h>
+  #include <stdlib.h>
+
+  void *a, *b;
+  unsigned n = 4096;
+
+  int main() {
+    a = malloc(100);
+    memset(a, 0xff, n);
+    b = malloc(100);
+  }
+
+  $ gcc -O2 repro.c
+  $ ./a.out
+  malloc(): corrupted top size
+  Aborted
+  ```
 - целевые уязвимости и распространённость:
-  * heap overflow
-  * use-after-free
-  * double free
-  * TODO: проанализировать CVE/KEV
+  * heap overflow, use-after-free, double free, free of invalid address
+  * статистика CVE/KEV приведена выше
 - TODO: история (optional)
 - TODO: возможные расширения
 - эквивалентные отладочные проверки: Asan, Valgrind, ElectricFence

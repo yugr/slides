@@ -8,10 +8,10 @@ TrickyOpts:gcc:-fno-delete-null-pointer-checks -fno-strict-overflow -fno-strict-
 Fortify3:gcc:-D_FORTIFY_SOURCE=3::
 HardenedSTL:gcc:-D_GLIBCXX_ASSERTIONS::
 Asan:gcc:::-DLLVM_USE_SANITIZER=Address
+# hardened_malloc can be tested manually via LD_PRELOAD
 # TODO: -fhardened
 
 # Some flags are only available in Clang++
 ClangDefault:clang:::
 ClangUBsan:clang:-fsanitize=undefined -fsanitize-minimal-runtime:-fsanitize-minimal-runtime:
 SafeStack:clang:-fsanitize=safe-stack::
-# TODO: Scudo or hardened_malloc

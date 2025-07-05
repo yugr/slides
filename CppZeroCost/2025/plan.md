@@ -77,6 +77,7 @@ Heap overflow атаки:
     * поменять метаданные аллокатора, чтобы заставить его менять произвольные адреса
       (например поменять адрес malloc hook и вызвать его при следующем malloc,
       House of Force)
+      + по этой причине malloc hooks были удалены из Glibc
   - примеры атак: https://0x434b.dev/overview-of-glibc-heap-exploitation-techniques/
 
 Распространённость buffer overflow-уязвимостей:
@@ -626,7 +627,7 @@ Aborted
 - оверхед
   * [musl allocator 2-10x](https://nickb.dev/blog/default-musl-allocator-considered-harmful-to-performance/)
     + TODO: [global lock](https://news.ycombinator.com/item?id=23081071) ?
-  * TODO: померять дефолтный бенч
+  * hardened_malloc vs Glibc allocator: 9% на Clang (67 сек. -> 73 сек. на CGBuiltin.cpp)
 - TODO: проблемы:
   * false positives и false negatives (искать "bypassing FEATURE")
   * атаки на Scudo: https://www.usenix.org/system/files/woot24-mao.pdf

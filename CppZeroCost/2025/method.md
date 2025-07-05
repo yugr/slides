@@ -62,3 +62,4 @@ TODO: прочитать:
   - https://github.com/rust-lang/rust/issues/15179
   - примеры атак: https://guyinatuxedo.github.io
   - https://www.reddit.com/r/cpp/comments/1bafd7b/compiler_options_hardening_guide_for_c_and_c/
+  - https://people.eecs.berkeley.edu/~dawnsong/papers/Oakland13-SoK-CR.pdf

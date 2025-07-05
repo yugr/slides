@@ -114,7 +114,7 @@ Heap overflow атаки:
   * ликвидирует stack smashing атаки как класс
   * см. статистику выше
 - эквивалентные отладочные проверки:
-  * Asan обнаруживает причину подобных ошибок (stack buffer overflow)
+  * Asan обнаруживает причину подобных ошибок, stack buffer overflow (Valgrind нет)
 - проблемы:
   * false positives:
     + библиотеки или программы, которые полагаются на execstack
@@ -145,7 +145,7 @@ Heap overflow атаки:
     но динамическая память в Glibc и так noexec с доисторических времён
 - оверхед отсутствует
 - сравнение с безопасными языками:
-  * в Rust стек всегда неисполняемый
+  * в Rust стек [всегда неисполняемый](https://doc.rust-lang.org/rustc/exploit-mitigations.html#non-executable-memory-regions)
 - как включить:
   * обычное использование
     + обычно компилятор просто сообщает линкеру о noexecstack с помощью
@@ -175,7 +175,7 @@ Heap overflow атаки:
   * динамические библиотеки уже поддерживают загрузку по произвольному адресу
     + т.н. position-independent code (опция `-fPIC`)
     + инструкции не используют абсолютные адреса
-  * мы можем собрать в таком режиме и основное приложение
+  * мы можем собрать в таком режиме и основное приложение ("full ASLR")
     + `-fPIE` = `-fPIC` + доп. оптимизации (связанные с невозможностью runtime interposition)
 - пример ошибки
   * классическая атака Stack Smashing приведена [здесь](exploits/stack-smash)
@@ -193,7 +193,7 @@ Heap overflow атаки:
   * техника сильно снижает риски buffer overflow атак например return-to-libc и ROP
   * см. статистику выше
 - эквивалентные отладочные проверки:
-  * Asan (и до некоторой степени Valgrind) обнаруживают причину подобных ошибок (buffer overflow)
+  * Asan (и до некоторой степени Valgrind, за исключением stack overflow) обнаруживают причину подобных ошибок (buffer overflow)
 - проблемы:
   * рандомизируется только базовый адрес приложения
     * хакер знает относительные смещения кода, глобальных переменных, таблиц GOT/PLT
@@ -216,7 +216,7 @@ Heap overflow атаки:
 - оверхед:
   * нет оверхеда при замерах на Clang
 - сравнение с безопасными языками:
-  * Rust также собирается с `-fPIE`
+  * Rust [также собирается с `-fPIE`](https://doc.rust-lang.org/rustc/exploit-mitigations.html#position-independent-executable)
 - как включить:
   * флаги `-fPIE -pie` (GCC, Clang), `/DYNAMICBASE` (Visual Studio)
   * включена по умолчанию в GCC/Clang в Ubuntu/Debian
@@ -247,8 +247,9 @@ Heap overflow атаки:
     ```
 - целевые уязвимости и распространённость:
   * позволяет обнаруживать переполнение буфера перед return и соответственно ломает return-to-libc и ROP
-  * TODO: анализ CVE
-- TODO: расширения
+  * см. статистику выше
+- расширения:
+  * аналоги канареек используются в некоторых аллокаторах для обнаружения overflow
 - история
   * одна из первых проверок
   * также известны как stack canaries (взять картинку "canary in coal mine")
@@ -263,7 +264,7 @@ Heap overflow атаки:
       - функции с любыми (в т.ч. вложенными) массивами
       - функции, которые передают адрес на локальные переменные
       - и т.п.
-- эквивалентные отладочные проверки: Asan (не Valgrind !)
+- эквивалентные отладочные проверки: Asan (Valgrind не умеет находить stack overflow)
 - оверхед
   * существенные накладные расходы:
     + загрузка значения канарейки
@@ -274,14 +275,15 @@ Heap overflow атаки:
     + [`-fstack-protector-strong` no overhead](https://zatoichi-engineer.github.io/2017/10/04/stack-smashing-protection.html)
   * 2% оверхед на Clang (67 сек. -> 68.5 сек. на CGBuiltin.cpp)
 - проблемы
-  * TODO: FP и FN
-  * уязвим к info leakage (если канарейка утекла, то защита неэффективна)
-  * если канарейка хранится в том же сегменте что и стек, хакер может переписать и её
-  * не защищает от переписывания указателей на функции на стеке
+  * false positives: отсутствуют
+  * false negatives:
+    + уязвима к info leakage (если канарейка утекла, то защита неэффективна)
+    + если канарейка хранится в том же сегменте что и стек, хакер может переписать и её
+    + не защищает от переписывания указателей на функции на стеке
 - сравнение с безопасными языками
-  * Rust:
+  * [Rust](https://doc.rust-lang.org/rustc/exploit-mitigations.html#stack-smashing-protection):
       + вообще коду на Rust эта опция не требуется, но она полезна в случае вызова внешних библиотек
-      + есть опция для включения (`-Z stack-protector`),
+      + есть опция для включения (`-Z stack-protector`), для обнаружения проблем с C частях программы,
         но по дефолту [отключена](https://github.com/rust-lang/compiler-team/issues/841)
 - кaк включить:
   * флаг `-fstack-protector-strong` (GCC, Clang), `/GS` (Visual Studio)
@@ -303,17 +305,23 @@ Heap overflow атаки:
     мы как бы перепрыгиваем guard page ?
   * идея пройти по всему фрейму с шагом 4096 перед началом работы,
     чтобы гарантированно спровоцировать SEGV
-- TODO: целевые уязвимости и распространённость (анализ CVE)
-- TODO: история (optional)
-  * [серия статей Qualys](https://www.qualys.com/2017/06/19/stack-clash/stack-clash.txt) с proof of concept (2017)
-- TODO: возможные расширения
+- целевые уязвимости и распространённость:
+  * выделенной CWE для таких уязвимостей нет и непонятно как их искать
+- история:
+  * guard page в Linux был [внедрён в 2010](https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2010-2240)
+  * [серия статей Qualys](https://www.qualys.com/2017/06/19/stack-clash/stack-clash.txt) с ~10 proof of concept атаками (2017)
+    + также https://www.openwall.com/lists/oss-security/2021/07/20/2
+- возможные расширения: N/A
 - эквивалентные отладочные проверки: не существует
 - оверхед
   * [нет регрессий на Firefox](https://blog.llvm.org/posts/2021-01-05-stack-clash-protection/)
   * нет оверхеда на Clang
-- TODO: проблемы (FP и FN)
+- проблемы:
+  * false positives: неизвестны
+  * false negatives: неизвестны
 - сравнение с безопасными языками
-  * в Rust stack probing включён по умолчанию (по крайней мере на x86)
+  * в Rust stack probing [включён по умолчанию](https://doc.rust-lang.org/rustc/exploit-mitigations.html#stack-clashing-protection)
+   (по крайней мере на x86)
 - как включить
   * `-fstack-clash-protection` (ещё есть устаревший и неиспользуемый `-fstack-check`)
   * включены по умолчанию в Ubuntu GCC и больше нигде
@@ -321,12 +329,20 @@ Heap overflow атаки:
   * https://developers.redhat.com/blog/2017/09/25/stack-clash-mitigation-gcc-background
   * https://developers.redhat.com/blog/2019/04/30/stack-clash-mitigation-in-gcc-why-fstack-check-is-not-the-answer
   * https://developers.redhat.com/blog/2020/05/22/stack-clash-mitigation-in-gcc-part-3
-- TODO: использование в реальных проектах
+- использование в реальных проектах
   * пакеты Fedora (и Ubuntu) дефолтно собираются с `-fstack-clash-protection`
   * пакеты Debian [похоже](https://github.com/jvoisin/compiler-flags-distro/issues/12) собираются пока без этого флага
+  * checksec сейчас [не обнаруживает stack clash](https://github.com/slimm609/checksec/issues/300)
+    + пришлось написать [свой скрипт](scripts/has_stack_clash_protection.py)
+    + на Ubuntu почти все программы защищены
+    + на Debian нет, даже highly-exposed программы: bash, bzip2, curl, ffmpeg, perl, python, etc.
+  * Firefox [использует](https://bugzilla.mozilla.org/show_bug.cgi?id=1852202) `-fstack-clash-protection`
 
 ## Разделение стеков
 
+- aka SafeStack, aka backward-edge CFI, aka ShadowStack
+  * отличие Shadow от Safe - в Shadow на втором стеке хранятся только return addresses,
+    а в Safe тоже и безопасные локальные переменные и спиллы
 - суть проверки:
   * основная проблема stack buffer overflow -
     адрес возврата хранится вместе с локальными массивами
@@ -334,34 +350,44 @@ Heap overflow атаки:
     + адрес возврата (и возможно скалярные переменные, адрес которых не берётся)
     + все остальные
   * по сути это доп. улучшение StackProtector
+  * совместима со StackProtector (он по прежнему применяется для unsafe stack для обнаружения overflow)
   * полная защита от stack buffer overflow + дополнительная рандомизация
     для критических данных
-- TODO: пример ошибки
-- TODO: целевые уязвимости и распространённость (анализ CVE/KVE)
-- TODO: история (optional)
-- TODO: возможные расширения
+- пример ошибки:
+  * тот же что для Stack Protector
+- целевые уязвимости и распространённость
+  * позволяет обнаруживать переполнение буфера перед return и соответственно ломает return-to-libc и ROP
+  * в отличие от Stack Protector также защищает от атак на указатели на функции на стеке
+  * см. статистику выше
+- история:
+  * множество различных решений, первое кажется StackShield (~2000)
+- возможные расширения: N/A
 - эквивалентные отладочные проверки: Asan
 - оверхед:
   * [0.1% SafeStack](https://clang.llvm.org/docs/SafeStack.html)
   * 3% на Clang (69 сек. -> 71 сек. на CGBuiltin.cpp)
 - проблемы:
-  * TODO: false positives
-  * false negatives: https://www.blackhat.com/docs/eu-16/materials/eu-16-Goktas-Bypassing-Clangs-SafeStack.pdf
-  * SafeStack не поддерживает динамические библиотеки
-    + TODO: как его вообще можно использовать в таком случае ?
+  * false positives: неизвестны
+  * false negatives:
+    + TODO: https://www.blackhat.com/docs/eu-16/materials/eu-16-Goktas-Bypassing-Clangs-SafeStack.pdf
+  * в `-fsanitize=safe-stack` нет поддержки проверок в динамических библиотеках
+    + их можно использовать, но они не будут использовать ShadowStack
+    + возможно [поддержать их несложно](https://github.com/ossf/wg-best-practices-os-developers/issues/267#issuecomment-1835359166)
   * ShadowCallStack: только AArch64 и RISCV
-  * TODO: поддержка динамических библиотек
-- TODO: сравнение с безопасными языками
-  * Rust
+- сравнение с безопасными языками
+  * Rust [использует shadow stacks в найтли-сборке](https://doc.rust-lang.org/rustc/exploit-mitigations.html#stack-smashing-protection)
 - как включить:
   * несколько реализаций:
-    + SafeStack (`-fsanitize=safe-stack`) - не меняет ABI
-    + ShadowCallStack (`-fsanitize=shadow-call-stack` в GCC/Clang) - меняет ABI
-    + а также RetGuard, Intel CET, etc.
+    + SafeStack (`-fsanitize=safe-stack`) - [не меняет ABI](https://fuchsia.dev/fuchsia-src/concepts/kernel/safestack#interoperation_and_abi_effects)
+    + Intel CET Shadow Stack (`-mshstk`) - не меняет ABI, но требует аппаратной поддержки (Intel CET)
+      - TODO: как это связано с `-fcf-protection` ?
+    + ShadowCallStack (`-fsanitize=shadow-call-stack` в GCC/Clang) - [не меняет ABI](https://fuchsia.dev/fuchsia-src/concepts/kernel/shadow_call_stack#interoperation_and_abi_effects)
+      - AArch64-only
 - ссылка на статью:
   * https://blog.includesecurity.com/2015/11/strengths-and-weaknesses-of-llvms-safestack-buffer-overflow-protection/
 - использование в реальных проектах:
-  * не включён по умолчанию в дистрах
+  * не включён по умолчанию в дистрах (даже не поддержан в текущей версии GCC в них)
+  * не поддержан в checksec (можно просто искать публичный символ `__safestack_init`)
 
 ## Фортификация (`_FORTIFY_SOURCE`)
 
@@ -592,7 +618,7 @@ Heap overflow атаки:
   * некоторые программы могут сломаться (если в них были отсутствующие символы, которые не вызывались)
   * пользовательские таблицы функций не защищены (важно ли это ?)
 - сравнение с безопасными языками
-  * Rust [использует](https://github.com/rust-lang/rust/issues/29877) Full RELRO
+  * Rust [использует](https://doc.rust-lang.org/rustc/exploit-mitigations.html#read-only-relocations-and-immediate-binding) Full RELRO
 - как включить
   * указать опции линкера: `-Wl,-z,now -Wl,-z,relro`
   * поддержка в дистрибутивах и тулчейнах:
@@ -793,6 +819,7 @@ Heap overflow атаки:
     * also `-fcf-protection` and https://learn.microsoft.com/en-us/windows/win32/secbp/control-flow-guard
   - Stack scrubbing (`-fstrub`)
   - `-fzero-call-used-regs` (https://www.semanticscholar.org/paper/Clean-the-Scratch-Registers%3A-A-Way-to-Mitigate-Rong-Xie/6f2ce4fd31baa0f6c02f9eb5c57b90d39fe5fa13)
+  - ARM Memory Tagging Extensions
 
 # (3) Hardening под капотом на примере LLVM
 

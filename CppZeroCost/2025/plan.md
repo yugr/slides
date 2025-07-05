@@ -429,12 +429,44 @@ Heap overflow атаки:
     + printf and friends - %n допускается только в readonly-строках (проверяется по `/proc/self/maps`)
     + string.h APIs (`memcpy`, `memset`, `strcpy`, `strcat`, `bzero`, `bcopy`, etc.) - проверки диапазона
     + unistd.h APIs (`read`, `pread`, `readlink`, etc.) - проверки диапазона
-- TODO: пример ошибки
+    + всего ~80 штук
+- пример ошибки
+  ```
+  $ cat repro.c
+  include <stdlib.h>
+  #include <string.h>
+
+  unsigned n = 4096;
+
+  int main() {
+    char *a = malloc(1);
+
+    memset(a, 0, n);
+    asm("" :: "r"(&a) : "memory");
+
+    a = malloc(200);
+    asm("" :: "r"(&a) : "memory");
+
+    return 0;
+  }
+
+  # _FORTIFY_SOURCE=3
+  $ gcc tmp5.c -O2 && ./a.out 
+  *** buffer overflow detected ***: terminated
+  Aborted (core dumped)
+
+  # No _FORTIFY_SOURCE
+  $ gcc -U_FORTIFY_SOURCE tmp5.c -O2 && ./a.out 
+  Fatal glibc error: malloc.c:2599 (sysmalloc): assertion failed: (old_top == initial_top (av) && old_size == 0) || ((unsigned long) (old_size) >= MINSIZE && prev_inuse (old_top) && ((unsigned long) old_end & (pagesize - 1)) == 0)
+  Aborted (core dumped)
+  ```
 - целевые уязвимости:
-  * все buffer overflow (stack, heap)
-  * см. выше
-- TODO: история (optional)
-- TODO: возможные расширения
+  * любые buffer overflow (stack, heap)
+  * см. статистику выше
+- история:
+  * появились в Glibc 2.3.4 (2004)
+  * нет аналога в Visual Studio
+- возможные расширения: проверки в STL (см. ниже)
 - эквивалентные отладочные проверки:
   * аналогичные проверки, но намного более эффективные и медленные, делают Asan и Valgrind
   * важно отметить что Asan [не умеет анализировать `XXX_chk`-функции](https://github.com/google/sanitizers/issues/247)
@@ -446,17 +478,21 @@ Heap overflow атаки:
 - оверхед:
   * [`_FORTIFY_SOURCE=2` gives 3% ffmpeg overhead](https://zatoichi-engineer.github.io/2017/10/06/fortify-source.html)
   * 2% на Clang (67 сек. -> 68.5 сек. на CGBuiltin.cpp, `-D_FORTIFY_SOURCE=2`)
-- TODO: проблемы:
-  * false positives
+- проблемы:
+  * false positives: неизвестны
   * false negatives
-    + искать "bypassing FEATURE"
     + поддержана только в Glibc (не в musl)
-  * поддержка динамических библиотек
+    + работает только в `-O` режиме
+    + компилятор далеко не всегда может вывести допустимый размер указателя из контекста
+      - ограничен рамками функции
+    + TODO: искать "bypassing FEATURE"
   * поддержка на разных платформах
 - сравнение с безопасными языками
   * Rust включает обязательные (и неотключаемые) проверки диапазанов
 - как включить:
   * для явного включения используется `-D_FORTIFY_SOURCE=2` или -`D_FORTIFY_SOURCE=3`
+    + до тех пор пока не появится `-D_FORTIFY_SOURCE=4` :)
+  * standalone реализация: https://git.2f30.org/fortify-headers/files.html
   * проверка в дистре:
   ```
   $ gcc -x c /dev/null -O2 -E -dM | grep FORTIFY
@@ -467,7 +503,7 @@ Heap overflow атаки:
   * Clang: не включён по умолчанию нигде
 - ссылки на статьи:
   * https://www.redhat.com/en/blog/security-technologies-fortifysource
-  * TODO: https://maskray.me/blog/2022-11-06-fortify-source
+  * https://maskray.me/blog/2022-11-06-fortify-source
 - использование в реальных проектах
   * Debian (и Ubuntu): пакеты дефолтно собираются с `-D_FORTIFY_SOURCE=2`
   * Fedora: пакеты с 2023 дефолтно собираются с `-D_FORTIFY_SOURCE=3`

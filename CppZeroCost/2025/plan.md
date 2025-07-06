@@ -47,6 +47,7 @@ TODO:
       + mitigation, не prevention
   - требования к харденинг: низкий оверхед + высокая точность (low false positive rate) + простота интеграции (например не ломают ABI)
   - слайд с выводами: какие флаги включить у себя в проде
+  - добавить доклад "Delivering Safe C++" в ссылки
 
 # (2) Исчерпывающее перечисление: stack protector, pie, cfi, minimal ubsan, fortify, etc.
 
@@ -54,7 +55,7 @@ Time: 15 мин.
 
 Assignee: Юрий
 
-Effort: 29h
+Effort: 32h
 
 ## Атаки (exploits)
 
@@ -111,15 +112,15 @@ Heap overflow атаки:
 - aka W^X, aka NX bit, aka Data Execution Prevention
 - суть проверки:
   * отключает возможность исполнения кода в сегменте стека на уровне OS
-- история:
-  * одна из первых hardening защит
-  * впервые появились в OpenBSD (2003) и Windows (2004)
 - пример ошибки:
   * классическая атака Stack Smashing приведена [здесь](exploits/stack-smash)
   * при использовании noexecstack стабильно получаем
     ```
     Segmentation fault (core dumped)
     ```
+- история:
+  * одна из первых hardening защит
+  * впервые появились в OpenBSD (2003) и Windows (2004)
 - целевые уязвимости и распространённость
   * ликвидирует stack smashing атаки как класс
   * см. статистику выше
@@ -221,8 +222,7 @@ Heap overflow атаки:
       - требуется регулярный рестарт сервисов
   * ASLR убила подход предлинковки библиотек (Prelink), использовавшийся для ускорения загрузки
 - расширения:
-  * некоторые коммерческие тулчейны также рандомизируют порядок функций при линковке (Safe Compiler)
-  * Moving Target Defense динамически переупорядочивает сегменты в рантайме
+  * некоторые коммерческие тулчейны также динамически переупорядочивают сегменты в рантайме или линк-тайме (Safe Compiler, Moving Target Defense, Multicompiler)
 - оверхед:
   * нет оверхеда при замерах на Clang
 - сравнение с безопасными языками:
@@ -244,10 +244,11 @@ Heap overflow атаки:
 
 ## Stack Protector
 
-- рядом с return address на стеке размещается специальное случайное число ("канарейка")
+- рядом с return address на стеке размещается специальное случайное число ("канарейка", stack cookie)
   * переполнение буфера это memcpy, поэтому он не может изменить RA, не изменив канарейку (а её значение неизвестно)
   * также переупорядочивает переменные: скаляры кладутся ниже по стеку чем массивы
     + чтобы при переполнении массива нельзя было модифицировать флаги и т.п.
+  * один из байтов канарейки всегда нулевой (чтобы остановить строковый buffer overflow)
 - пример ошибки:
   * классическая атака Stack Smashing приведена [здесь](exploits/stack-smash)
   * при использовании Stack Protector стабильно получаем
@@ -255,11 +256,6 @@ Heap overflow атаки:
     *** stack smashing detected ***: terminated
     Aborted (core dumped)
     ```
-- целевые уязвимости и распространённость:
-  * позволяет обнаруживать переполнение буфера перед return и соответственно ломает return-to-libc и ROP
-  * см. статистику выше
-- расширения:
-  * аналоги канареек используются в некоторых аллокаторах для обнаружения overflow
 - история
   * одна из первых проверок
   * также известны как stack canaries (взять картинку "canary in coal mine")
@@ -274,6 +270,11 @@ Heap overflow атаки:
       - функции с любыми (в т.ч. вложенными) массивами
       - функции, которые передают адрес на локальные переменные
       - и т.п.
+- целевые уязвимости и распространённость:
+  * позволяет обнаруживать переполнение буфера перед return и соответственно ломает return-to-libc и ROP
+  * см. статистику выше
+- расширения:
+  * аналоги канареек используются в некоторых аллокаторах для обнаружения overflow
 - эквивалентные отладочные проверки: Asan (Valgrind не умеет находить stack overflow)
 - оверхед
   * существенные накладные расходы:
@@ -315,12 +316,13 @@ Heap overflow атаки:
     мы как бы перепрыгиваем guard page ?
   * идея пройти по всему фрейму с шагом 4096 перед началом работы,
     чтобы гарантированно спровоцировать SEGV
-- целевые уязвимости и распространённость:
-  * выделенной CWE для таких уязвимостей нет и непонятно как их искать
+- TODO: пример
 - история:
   * guard page в Linux был [внедрён в 2010](https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2010-2240)
   * [серия статей Qualys](https://www.qualys.com/2017/06/19/stack-clash/stack-clash.txt) с ~10 proof of concept атаками (2017)
     + также https://www.openwall.com/lists/oss-security/2021/07/20/2
+- целевые уязвимости и распространённость:
+  * выделенной CWE для таких уязвимостей нет и непонятно как их искать
 - возможные расширения: N/A
 - эквивалентные отладочные проверки: не существует
 - оверхед
@@ -469,12 +471,12 @@ Heap overflow атаки:
   Fatal glibc error: malloc.c:2599 (sysmalloc): assertion failed: (old_top == initial_top (av) && old_size == 0) || ((unsigned long) (old_size) >= MINSIZE && prev_inuse (old_top) && ((unsigned long) old_end & (pagesize - 1)) == 0)
   Aborted (core dumped)
   ```
-- целевые уязвимости:
-  * любые buffer overflow (stack, heap)
-  * см. статистику выше
 - история:
   * появились в Glibc 2.3.4 (2004)
   * нет аналога в Visual Studio
+- целевые уязвимости:
+  * любые buffer overflow (stack, heap)
+  * см. статистику выше
 - возможные расширения: проверки в STL (см. ниже)
 - эквивалентные отладочные проверки:
   * аналогичные проверки, но намного более эффективные и медленные, делают Asan и Valgrind
@@ -491,6 +493,7 @@ Heap overflow атаки:
   * false positives: неизвестны
   * false negatives
     + поддержана только в Glibc (не в musl)
+      - standalone реализация: https://git.2f30.org/fortify-headers/files.html
     + работает только в `-O` режиме
     + компилятор далеко не всегда может вывести допустимый размер указателя из контекста
       - ограничен рамками функции
@@ -538,9 +541,6 @@ Heap overflow атаки:
       - точно проверки не указны
     + [планируется удалить](https://www.reddit.com/r/cpp/comments/1hzj1if/comment/m6spu55),
       из-за [слишком большого оверхеда](https://www.reddit.com/r/cpp/comments/1hzj1if/comment/m6spg8v)
-- скорее всего эти проверки станут частью Стандарта (через механизм профилей)
-  * инструменты для миграции уже есть ([Safe Buffers](https://discourse.llvm.org/t/rfc-c-buffer-hardening/65734))
-  * caveat: [Updated Field Experience With Annex K — Bounds Checking Interfaces](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n1969.htm (2015))
 - пример ошибки
   ```
   $ cat repro.cc
@@ -571,6 +571,9 @@ Aborted
   * libc++ и Safe Buffers proposal (2022)
   * далее видимо STL hardening станет составной частью C++ профилей
 - возможные расширения:
+  * скорее всего эти проверки станут частью Стандарта C++ (через механизм профилей)
+    + инструменты для миграции уже есть ([Safe Buffers](https://discourse.llvm.org/t/rfc-c-buffer-hardening/65734))
+    + caveat: [Updated Field Experience With Annex K — Bounds Checking Interfaces](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n1969.htm (2015))
   * компиляторы поддерживают также ABI-breaking флаги, которые намного сильнее замедляют рантайм
   * рекомендуется включать их в QA-сборках
   * GCC: `-D_GLIBCXX_DEBUG` (надмножество `_GLIBCXX_ASSERTIONS`, несовместимо по ABI => требуется перекомпиляция C++-зависимостей)
@@ -606,7 +609,7 @@ Aborted
 - суть проверки:
   * дополнительные меры в динамическом аллокаторе для затруднения атак на метаданные аллокатора
 - примеры реализации:
-  * [Scudo](https://llvm.org/docs/ScudoHardenedAllocator.html) (дефолтный аллокатор Android)
+  * [Scudo](https://llvm.org/docs/ScudoHardenedAllocator.html) (дефолтный аллокатор Android, [описание](https://www.usenix.org/system/files/woot24-mao.pdf?ref=blog.exploits.club))
     + чексуммы для обнаружения перезаписи метаданных
     + рандомизация адресов внутри блоков
     + отложенное переиспользование освобождённой памяти (quarantine)
@@ -618,8 +621,10 @@ Aborted
     + зануление данных на `free` и проверка на `malloc`
     + канарейки
     + mmap-only (нет `sbrk(2)`, для рандомизации)
-  * malloc-ng (musl allocator)
-    + TODO
+  * [malloc-ng](https://gist.github.com/MaskRay/ac54b26d72452ac77ac578f2e625369f) (musl allocator)
+    + метаданные физически отделены от аллоцируемой памяти (нет "хедеров")
+    + рандомизация адресов внутри блоков
+    + канарейки
   * Glibc
     + pointer encryption - XOR всех указателей на функции с канарейкой
     + можно вызвать в начале программы [функцию mcheck](https://www.gnu.org/software/libc/manual/html_node/Heap-Consistency-Checking.html)
@@ -644,18 +649,40 @@ Aborted
   malloc(): corrupted top size
   Aborted
   ```
+  или
+  ```
+  $ cat tmp5.c
+  #include <stdlib.h>
+
+  void *a, *b;
+
+  int main() {
+    a = malloc(1);
+    free(a);
+    b = malloc(1);
+    free(a);
+    return 0;
+  }
+
+  $ gcc -O2 tmp5.c
+  $ ./a.out
+  $ LD_PRELOAD=$HOME/src/hardened_malloc/out/libhardened_malloc.so ./a.out
+  fatal allocator error: double free (quarantine)
+  Aborted
+  ```
+- TODO: история (optional)
 - целевые уязвимости и распространённость:
   * heap overflow, use-after-free, double free, free of invalid address
   * статистика CVE/KEV приведена выше
-- TODO: история (optional)
-- TODO: возможные расширения
+- возможные расширения: неизвестны
 - эквивалентные отладочные проверки: Asan, Valgrind, ElectricFence
 - оверхед
   * [musl allocator 2-10x](https://nickb.dev/blog/default-musl-allocator-considered-harmful-to-performance/)
-    + TODO: [global lock](https://news.ycombinator.com/item?id=23081071) ?
+    + это из-за [global lock](https://news.ycombinator.com/item?id=23081071), не имеет значения
   * hardened_malloc vs Glibc allocator: 9% на Clang (67 сек. -> 73 сек. на CGBuiltin.cpp)
-- TODO: проблемы:
-  * false positives и false negatives (искать "bypassing FEATURE")
+- проблемы:
+  * false positives: неизвестны
+  * TODO: false negatives (искать "bypassing FEATURE")
   * атаки на Scudo: https://www.usenix.org/system/files/woot24-mao.pdf
   * поддержка динамических библиотек
   * поддержка на разных платформах
@@ -684,7 +711,34 @@ Aborted
     + инициализировать содержимое таблиц на старте программы (`-z,now`)
     + пометить сегмент readonly (`-z,relro`)
   * доп. преимущество - нет проблемы с отложенными ошибками ненайденных символов
-- TODO: пример ошибки
+- пример ошибки (Ubuntu 24.04, Debian 12):
+  ```
+  $ cat repro.c
+  #include <stdio.h>
+
+  void shellcode() {
+    printf("You have beeen pwned%s\n", "");
+  }
+
+  extern void *_GLOBAL_OFFSET_TABLE_[];
+
+  int main() {
+    _GLOBAL_OFFSET_TABLE_[POS] = shellcode;
+    printf("Hello world!\n");
+    return 0;
+  }
+
+  $ for i in `seq 0 16`; do gcc -Wl,-z,norelro repro.c -DPOS=$i; ./a.out; i=$((i + 1)); done
+  Segmentation fault
+  Segmentation fault
+  Segmentation fault
+  You have beeen pwned
+  Hello world!
+  Hello world!
+  Hello world!
+  Hello world!
+  ...
+  ```
 - история:
   * подход RELRO уже использовался ранее для однократно инициализируемых таблиц (vtables)
     + см. [статью Ian Lance Taylor](https://www.airs.com/blog/archives/189)
@@ -700,7 +754,8 @@ Aborted
   * известные результаты не найдены
   * оверхед на Clang не обнаружен
 - проблемы:
-  * TODO: FP и FN
+  * false positives: неизвестны
+  * TODO: false negatives
   * замедленное время стартапа (на разрешение символов)
   * некоторые программы могут сломаться (если в них были отсутствующие символы, которые не вызывались)
   * пользовательские таблицы функций не защищены (важно ли это ?)
@@ -721,17 +776,18 @@ Aborted
 
 ## Уменьшение зависимостей
 
-- часто программа линкует лишние библиотеки (например из-за устаревших билдскриптов)
-- от них можно избавиться без ручной модификации Makefiles с помощью флагов `-Wl,--as-needed`
-  * [иногда](https://best.openssf.org/Compiler-Hardening-Guides/Compiler-Options-Hardening-Guide-for-C-and-C++.html#allow-linker-to-omit-libraries-specified-on-the-command-line-to-link-against-if-they-are-not-used)
-    также рекомендуют флаг `-Wl,--no-copy-dt-needed-entries`, но во-первых он не влияет на безопасность,
-    а во-вторых и так включён по умолчанию в современных линкерах
-- обычно эти опции используют только для ускорения стартапа, но у них есть вторичный эффект:
-  * уменьшается число доступных хакеру библиотек (для поиска гаджетов)
-- могут быть полезны против всех stack overflow атак, полагающихся на ROP
+- суть техники:
+  * часто программа линкует лишние библиотеки (например из-за устаревших билдскриптов)
+  * от них можно избавиться без ручной модификации Makefiles с помощью флагов `-Wl,--as-needed`
+    + [иногда](https://best.openssf.org/Compiler-Hardening-Guides/Compiler-Options-Hardening-Guide-for-C-and-C++.html#allow-linker-to-omit-libraries-specified-on-the-command-line-to-link-against-if-they-are-not-used)
+      также рекомендуют флаг `-Wl,--no-copy-dt-needed-entries`, но во-первых он не влияет на безопасность,
+      а во-вторых и так включён по умолчанию в современных линкерах
+  * обычно эти опции используют только для ускорения стартапа, но у них есть вторичный эффект:
+    + уменьшается число доступных хакеру библиотек (для поиска гаджетов)
+  * могут быть полезны против всех stack overflow атак, полагающихся на ROP
+- TODO: история
 - TODO: целевые уязвимости и распространённость (анализ CVE):
 - эквивалентные отладочные проверки: те же что у неисполняемого стека
-- TODO: история
 - TODO: расширения
 - оверхед: отсутствует (наоборот, стартап может ускориться)
 - проблемы:
@@ -811,6 +867,7 @@ Aborted
       (в частности нужен blacklist для кода в STL,
        полагающегося на переполнение)
   - false negatives:
+    * UBsan несовместим с `-fno-strict-overflow` и `-fwrapv`
     * может не обнаруживать некоторые баги,
       которые успел "перехватить" оптимизатор (особенно под `-O2`):
       ```
@@ -868,6 +925,7 @@ Aborted
   чем GCC/Clang
 - обычно отключают:
   * `-fno-delete-null-pointer-checks`, `-fno-strict-overflow`, `-fno-strict-aliasing` (GCC/Clang)
+    + заметим что `-fno-strict-overflow` == `-fwrapv` + `-fwrapv-pointer`
   * [`d2SSAOptimizerUndefinedIntOverflow-`](https://devblogs.microsoft.com/cppblog/new-code-optimizer/) (Visual Studio)
 - целевые уязвимости и распространённость:
   * CVE по этой фиче очень мало (например [CVE-2009-1897](https://nvd.nist.gov/vuln/detail/CVE-2009-1897)),
@@ -911,6 +969,7 @@ Aborted
       ```
       -D_FORTIFY_SOURCE=3 -D_GLIBCXX_ASSERTIONS -ftrivial-auto-var-init=zero -fPIE -Wl,-z,now -Wl,-z,relro -fstack-protector-strong -fstack-clash-protection -fcf-protection=full
       ```
+- аналогичную опцию для Rust [пока не добавили](https://github.com/rust-lang/rust/issues/15179)
 
 ## TODO
 
@@ -926,7 +985,7 @@ Aborted
     * also https://learn.microsoft.com/en-us/windows/win32/secbp/control-flow-guard
   - Stack scrubbing (`-fstrub`)
   - `-fzero-call-used-regs` (https://www.semanticscholar.org/paper/Clean-the-Scratch-Registers%3A-A-Way-to-Mitigate-Rong-Xie/6f2ce4fd31baa0f6c02f9eb5c57b90d39fe5fa13)
-  - ARM Memory Tagging Extensions
+  - [ARM Memory Tagging Extensions](https://web.archive.org/web/20241016154235/https://community.arm.com/arm-community-blogs/b/architectures-and-processors-blog/posts/enhanced-security-through-mte)
 
 # (3) Hardening под капотом на примере LLVM
 

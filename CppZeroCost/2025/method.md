@@ -29,7 +29,7 @@
     * процитировать известные результаты
     * использовать один и тот же бенч
   - проблемы:
-    * false positives и false negatives (искать "bypassing FEATURE")
+    * false positives и false negatives (искать "bypassing FEATURE", "weakness of FEATURE")
     * поддержка динамических библиотек
     * поддержка на разных платформах
   - сравнение с безопасными языками
@@ -55,11 +55,8 @@
   - [скрипты запуска](bench)
 
 TODO: прочитать:
-  - https://fedoraproject.org/wiki/Security_Features_Matrix
-  - https://wiki.debian.org/HardeningWalkthrough#Selecting_security_hardening_options
-  - https://wiki.ubuntu.com/Security/Features
-  - https://wiki.gentoo.org/wiki/Project:Hardened
-  - https://github.com/rust-lang/rust/issues/15179
-  - примеры атак: https://guyinatuxedo.github.io
-  - https://www.reddit.com/r/cpp/comments/1bafd7b/compiler_options_hardening_guide_for_c_and_c/
+  - https://hovav.net/ucsd/talks/blackhat08.html
   - https://people.eecs.berkeley.edu/~dawnsong/papers/Oakland13-SoK-CR.pdf
+  - https://vvdveen.com/publications/RAID2012.pdf
+  - https://stackoverflow.com/questions/34616086/union-punning-structs-w-common-initial-sequence-why-does-c-99-but-not (low prio)
+  - примеры атак: https://guyinatuxedo.github.io (low prio)

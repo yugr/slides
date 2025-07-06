@@ -1057,7 +1057,9 @@ Aborted
   * [Security flaws caused by compiler optimizations](https://www.redhat.com/en/blog/security-flaws-caused-compiler-optimizations)
   * https://my.eng.utah.edu/~cs5785/slides-f10/Dangerous+Optimizations.pdf
   * статьи John Regehr: https://blog.regehr.org/archives/213 и https://blog.regehr.org/archives/1520
-- TODO: использование в реальных проектах
+- использование в реальных проектах:
+  * дефолтно не используются в дистрибутивах
+  * TODO: проверить сколько пакетов используют эти флаги (как ?)
 
 ## `-fhardened`
 

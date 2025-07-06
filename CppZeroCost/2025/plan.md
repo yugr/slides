@@ -651,7 +651,7 @@ Aborted
   ```
   или
   ```
-  $ cat tmp5.c
+  $ cat repro.c
   #include <stdlib.h>
 
   void *a, *b;
@@ -664,7 +664,7 @@ Aborted
     return 0;
   }
 
-  $ gcc -O2 tmp5.c
+  $ gcc -O2 repro.c
   $ ./a.out
   $ LD_PRELOAD=$HOME/src/hardened_malloc/out/libhardened_malloc.so ./a.out
   fatal allocator error: double free (quarantine)
@@ -755,10 +755,9 @@ Aborted
   * оверхед на Clang не обнаружен
 - проблемы:
   * false positives: неизвестны
-  * TODO: false negatives
-  * замедленное время стартапа (на разрешение символов)
-  * некоторые программы могут сломаться (если в них были отсутствующие символы, которые не вызывались)
-  * пользовательские таблицы функций не защищены (важно ли это ?)
+  * false negatives:
+    + некоторые программы могут сломаться (если в них были отсутствующие символы, которые не вызывались)
+    + пользовательские таблицы функций не защищены (важно ли это ?)
 - сравнение с безопасными языками
   * Rust [использует](https://doc.rust-lang.org/rustc/exploit-mitigations.html#read-only-relocations-and-immediate-binding) Full RELRO
 - как включить
@@ -785,15 +784,53 @@ Aborted
   * обычно эти опции используют только для ускорения стартапа, но у них есть вторичный эффект:
     + уменьшается число доступных хакеру библиотек (для поиска гаджетов)
   * могут быть полезны против всех stack overflow атак, полагающихся на ROP
-- TODO: история
-- TODO: целевые уязвимости и распространённость (анализ CVE):
+- история:
+  * появились в GNU ld в 2004 как оптимизация для динамических библиотек
+  * OpenSSF стала рекомендовать её в [2024](https://github.com/ossf/wg-best-practices-os-developers/issues/510)
+- целевые уязвимости и распространённость:
+  * уменьшает вероятность найти ROP gadgets для stack overflow атак
+  * см. статистику выше
 - эквивалентные отладочные проверки: те же что у неисполняемого стека
-- TODO: расширения
+- расширения:
+  * ленивое связывание библиотек (см. доклад Грибова)
 - оверхед: отсутствует (наоборот, стартап может ускориться)
 - проблемы:
-  * TODO: FP и FN
-  * могут сломаться некоторые программы
+  * false positive: могут сломаться некоторые программы
     + например которые использовали символы отброшенных либ с помощью `dlsym`
+  * false negative: линкер делает `--as-needed` после `--gc-sections`
+    поэтому [может оставить некоторые ненужные библиотеки](https://sourceware.org/bugzilla/show_bug.cgi?id=24836):
+    ```
+    $ cat repro.c
+    #include <math.h>
+
+    // Эта функция будет выброшена
+    float foo(float x) { return sinf(x); }
+
+    int main() { return 0; }
+
+    # Дефолтно требуется линковка с libm
+    $ gcc repro.c -O2
+    /usr/bin/ld: /tmp/ccmERumv.o: in function `foo':
+    tmp8.c:(.text+0x1): undefined reference to `sinf'
+    collect2: error: ld returned 1 exit status
+    $ gcc repro.c -O2 -lm
+    $ readelf -sW a.out | grep foo
+        29: 0000000000001170     5 FUNC    GLOBAL DEFAULT   15 foo
+    $ ldd a.out
+            linux-vdso.so.1 (0x00007fff45686000)
+            libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007ff3af5c7000)
+            libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007ff3af3e6000)
+            /lib64/ld-linux-x86-64.so.2 (0x00007ff3af6c3000)
+
+    # С --gc-sections функция foo была выброшена,
+    # но линкер оставил зависимость от libm
+    $ gcc repro.c -O2 -Wl,--as-needed -ffunction-sections -Wl,--gc-sections -lm
+    $ readelf -sW a.out | grep foo
+    $ ldd a.out
+            linux-vdso.so.1 (0x00007fff1ad1e000)
+            libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007fe2f1cbb000)
+            ...
+    ```
 - сравнение с безопасными языками
   * Rust компилируется только с `--as-needed` (как и GCC/Clang)
 - как включить
@@ -807,36 +844,82 @@ Aborted
 ## Автоматическая инициализация
 
 - инициализация всех локальных переменных (нулями для hardening, случайными значениями для debug)
-- TODO: пример ошибки
-- TODO: история
-- TODO: расширения
-- TODO: что будет в C++26 (@Роман):
-  * `[[indeterminate]]`
-  * [P2795](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2023/p2795r3.html)
-  * [P2723](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2023/p2723r1.html)
+- пример ошибки:
+  ```
+  // Компилятор может скомпилировать эту функцию,
+  // а также любую функцию, которая её гарантированно вызывает,
+  // в nop или halt
+  int foo() {
+    int x;
+    if (x)
+      bar();
+    else
+      bro();
+  }
+  ```
+- история
+  * предложения высказывались с незапамятных времён (например с [2014 года](https://gcc.gnu.org/legacy-ml/gcc-patches/2014-06/msg00615.html))
+  * [InitAll](https://github.com/microsoft/MSRC-Security-Research/blob/master/presentations/2019_09_CppCon/CppCon2019%20-%20Killing%20Uninitialized%20Memory.pdf) в Windows появился в 2019
+  * GCC в [2021](https://gcc.gnu.org/pipermail/gcc-patches/2021-February/565514.html)
+- расширения:
+  * неинициализированные переменные и C++26 (@Роман):
+    + использование неинициализированной переменной станет erroneous behavior:
+      - не UB
+      - компилятор должен либо выдать проверку, либо инициализировать
+      - компилятор не сможет делать вышеуказанные проблемные оптимизации
+        * их можно будет включить явно с помощью атрибута `[[indeterminate]]`
+    + [P2795](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2023/p2795r3.html)
+    + [P2723](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2023/p2723r1.html)
 - эквивалентные отладочные проверки: Msan, Valgrind, [DirtyFrame](https://github.com/yugr/DirtyFrame)
 - целевые уязвимости и распространённость:
   * около 50 uninitialized variable CVE в 2024 (1% от buffer overflow CVE)
-  * TODO: KEV
+  * не найдено ни одного KEV
+  * 10% CVE root cause в продуктах Microsoft в 2018 ([отсюда](https://github.com/microsoft/MSRC-Security-Research/blob/master/presentations/2019_09_CppCon/CppCon2019%20-%20Killing%20Uninitialized%20Memory.pdf))
+  * [12% exploitable bugs on Android](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2023/p2723r1.html#real-world)
 - оверхед:
   * [1% на Firefox](https://serge-sans-paille.github.io/pythran-stories/trivial-auto-var-init-experiments.html)
   * may take over 10% on hot paths:
     + [virtio](https://patchwork-proxy.ozlabs.org/project/qemu-devel/patch/20250604191843.399309-1-stefanha@redhat.com/)
-    + [Chrome](https://issues.chromium.org/issues/40633061#comment142)
+    + [Chrome](https://issues.chromium.org/issues/40633061#comment142) (исправление заняло ~4 месяца)
+  * [1-3% в среднем на Postgres (до 20% на некоторых кейсах)](https://bugs.launchpad.net/ubuntu/+source/dpkg/+bug/1972043/comments/11)
+  * [<1% в Windows](https://github.com/microsoft/MSRC-Security-Research/blob/master/presentations/2019_09_CppCon/CppCon2019%20-%20Killing%20Uninitialized%20Memory.pdf)
   * 4.5% оверхед на Clang (67 сек. -> 70 сек. на CGBuiltin.cpp)
+  * существенный оверхед если на hot path есть
+    большой локальный массив (например для IO)
+  * пример проблемы:
+    ```
+    while (std::getline(maps, line)) {
+      char modulePath[PATH_MAX + 1] = "";
+      // -ftrivial-auto-var-init вставит здесь memset...
+      ret = sscanf(line.c_str(),
+                   "%lx-%lx %6s %lx %*s %*x %" PATH_MAX_STRING(PATH_MAX)
+                   "s\n",
+                   &start, &end, perm, &offset, modulePath);
+    }
+    ```
 - проблемы
-  * TODO: FP и FN
-  * существенный оверхед
-  * ломает обнаружение багов в Valgrind и Msan
-  * инициализация нулями не всегда даёт осмысленный результат (мы скорее скрываем проблему, а не фиксим)
-  * применяется только к локальным переменным (глобальные и так инициализируются, для кучи можно использовать Scudo hardened allocator)
+  * false positives: неизвестны
+  * false negatives:
+    + ломает обнаружение багов в Valgrind и Msan
+    + инициализация нулями не всегда даёт осмысленный результат (мы скорее скрываем проблему, а не фиксим)
+      - в Linux 0 это например id суперпользователя
+    + применяется только к локальным переменным (глобальные и так инициализируются, для кучи можно использовать Scudo hardened allocator)
 - сравнение с безопасными языками
   * Rust заставляет программиста инициализировать переменные (или явно использовать враппер `MaybeUninit`)
+    + также Swift, C#
   * Java заставляет программиста инициализировать локальные переменные (динамическая память гарантированно зануляется)
 - как включить:
   * флаг `-ftrivial-auto-var-init=zero` (GCC, Clang), [скрытый](https://lectem.github.io/msvc/reverse-engineering/build/2019/01/21/MSVC-hidden-flags.html) [флаг](https://msrc.microsoft.com/blog/2020/05/solving-uninitialized-stack-memory-on-windows/) `-initall` (Visual Studio)
-- TODO: использование в реальных проектах
+    + можно использовать не только нули, но [считается](https://lists.llvm.org/pipermail/cfe-dev/2020-April/065221.html)
+      что нулевая инициализация более безопасна
+- использование в реальных проектах
   * не включён по умолчанию ни в одном дистро
+    + [обсуждение в Ubuntu](https://bugs.launchpad.net/ubuntu/+source/dpkg/+bug/1972043)
+  * [включён в Chrome](https://issues.chromium.org/issues/40633061)
+    + исправление и отключение hot paths заняло ~4 месяца
+  * [не включён в Firefox](https://serge-sans-paille.github.io/pythran-stories/trivial-auto-var-init-experiments.html)
+- статьи:
+  * https://github.com/microsoft/MSRC-Security-Research/blob/master/presentations/2019_09_CppCon/CppCon2019%20-%20Killing%20Uninitialized%20Memory.pdf
 
 ## Проверки целочисленного переполнения
 
@@ -847,15 +930,31 @@ Aborted
     большой рантайм, открывающий новые возможности для атаки
   * решение: использование "Ubsan minimal runtime"
     (немедленный аборт программы)
-- TODO: пример ошибки
-- TODO: целевые уязвимости и распространённость (анализ CVE/KVE):
-  * CVE/KVE по integer overflow достаточно мало
+- пример ошибки:
+  ```
+  // Из OpenSSH 3.3
+  nresp = packet_get_int();
+  if (nresp > 0) {
+    // Переполняем целое число до нуля здесь ...
+    response = xmalloc(nresp*sizeof(char*));
+    // ... и вызываем heap buffer overflow тут
+    for (i = 0; i < nresp; i++)
+      response[i] = packet_get_string(NULL);
+  }
+  ```
+- целевые уязвимости и распространённость (анализ CVE/KVE):
+  * все ошибки Integer Overflow (статистика приведена выше)
   * два канонических примера: инцидент с облучателем Therac-25 и катастрофа ракеты Ariane 5
-- TODO: история (optional)
+- история:
+  * опция `-ftrapv` появилась в [2000](https://gcc.gnu.org/legacy-ml/gcc-patches/2000-10/msg00607.html)
+    + за фичей не следили и она быстро [протухла](https://gcc.gnu.org/bugzilla/show_bug.cgi?id=35412)
+  * работы John Regehr в [2010](https://blog.regehr.org/archives/1559)
+  * UBsan в [2014](https://developers.redhat.com/blog/2014/10/16/gcc-undefined-behavior-sanitizer-ubsan)
+    + state-of-the-art
 - возможные расширения
   * помимо UBsan рекомендуется включать Isan (надо будет отключить инструментацию в STL RNG,
     там ест intentional unsigned overflow)
-  * `-ftrapv`
+  * `-ftrapv` неработоспособна
 - эквивалентные отладочные проверки:
   * UBsan/Isan может использоваться и как отладочный инструмент
 - оверхед:
@@ -891,7 +990,8 @@ Aborted
 - как включить
   * Clang: `-fsanitize=undefined -fsanitize-minimal-runtime` (рекомендую также добавлять `integer`)
   * GCC: `-fsanitize-trap=undefined` (`integer` не поддержан в GCC)
-- TODO: ссылка на хорошую статью
+- ссылка на статью:
+  * https://developers.redhat.com/blog/2014/10/16/gcc-undefined-behavior-sanitizer-ubsan
 - использование в реальных проектах
   * не используется в дистрах
   * используется в Android media stack:
@@ -956,6 +1056,7 @@ Aborted
   * [обсуждение `-fwrapv` в Firefox](https://bugzilla.mozilla.org/show_bug.cgi?id=1031653)
   * [Security flaws caused by compiler optimizations](https://www.redhat.com/en/blog/security-flaws-caused-compiler-optimizations)
   * https://my.eng.utah.edu/~cs5785/slides-f10/Dangerous+Optimizations.pdf
+  * статьи John Regehr: https://blog.regehr.org/archives/213 и https://blog.regehr.org/archives/1520
 - TODO: использование в реальных проектах
 
 ## `-fhardened`

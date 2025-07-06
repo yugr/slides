@@ -55,7 +55,7 @@ Time: 15 мин.
 
 Assignee: Юрий
 
-Effort: 32h
+Effort: 35h
 
 ## Атаки (exploits)
 

@@ -55,7 +55,8 @@ Time: 15 мин.
 
 Assignee: Юрий
 
-Effort: 35h
+Effort (plan): 36h
+Effort (slides): 3h
 
 ## Атаки (exploits)
 
@@ -304,6 +305,7 @@ Heap overflow атаки:
   * https://www.redhat.com/en/blog/security-technologies-stack-smashing-protection-stackguard
 - использование в реальных проектах
   * пакеты в Debian и Fedora (а также Ubuntu) дефолтно собираются с `-fstack-protector-strong`
+  * TODO: browsers
 
 ## Stack clashing (aka stack probes)
 
@@ -495,6 +497,7 @@ Heap overflow атаки:
     + поддержана только в Glibc (не в musl)
       - standalone реализация: https://git.2f30.org/fortify-headers/files.html
     + работает только в `-O` режиме
+    + работает только если подключены стандартные .h файлы (нет implicit declarations)
     + компилятор далеко не всегда может вывести допустимый размер указателя из контекста
       - ограничен рамками функции
     + TODO: искать "bypassing FEATURE"

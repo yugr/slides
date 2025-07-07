@@ -1063,7 +1063,7 @@ Aborted
 
 ## `-fhardened`
 
-- зонтичная опция для всех hardened-оптимизаций
+- зонтичная опция для наиболее важных hardened-оптимизаций
 - включает [все опции, рекомендованные OpenSSF](https://best.openssf.org/Compiler-Hardening-Guides/Compiler-Options-Hardening-Guide-for-C-and-C++.html)
 - хороший дефолтный флаг, но пока реализован только в GCC
   * [Clang issue](https://github.com/llvm/llvm-project/issues/122687)
@@ -1073,6 +1073,14 @@ Aborted
       -D_FORTIFY_SOURCE=3 -D_GLIBCXX_ASSERTIONS -ftrivial-auto-var-init=zero -fPIE -Wl,-z,now -Wl,-z,relro -fstack-protector-strong -fstack-clash-protection -fcf-protection=full
       ```
 - аналогичную опцию для Rust [пока не добавили](https://github.com/rust-lang/rust/issues/15179)
+
+## Опции для гарантированной очистки локальных данных
+
+- Пароли и т.п.
+- Не будем обсуждать подробно
+- Опции GCC:
+  * stack scrubbing - очистка стека при выходе из функции (`-fstrub`)
+  * [`-fzero-call-used-regs`](https://www.semanticscholar.org/paper/Clean-the-Scratch-Registers%3A-A-Way-to-Mitigate-Rong-Xie/6f2ce4fd31baa0f6c02f9eb5c57b90d39fe5fa13) - очистка регистров при выходе из функции
 
 ## TODO
 
@@ -1086,8 +1094,6 @@ Aborted
       + включаются по `-mbranch-protection`
     * also `-fcf-protection`
     * also https://learn.microsoft.com/en-us/windows/win32/secbp/control-flow-guard
-  - Stack scrubbing (`-fstrub`)
-  - `-fzero-call-used-regs` (https://www.semanticscholar.org/paper/Clean-the-Scratch-Registers%3A-A-Way-to-Mitigate-Rong-Xie/6f2ce4fd31baa0f6c02f9eb5c57b90d39fe5fa13)
   - [ARM Memory Tagging Extensions](https://web.archive.org/web/20241016154235/https://community.arm.com/arm-community-blogs/b/architectures-and-processors-blog/posts/enhanced-security-through-mte)
 
 # (3) Hardening под капотом на примере LLVM

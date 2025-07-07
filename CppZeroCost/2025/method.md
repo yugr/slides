@@ -54,6 +54,9 @@
   - ОС Debian 12 (bookworm)
   - [скрипты запуска](bench)
 
+TODO:
+  - отдельный слайд про Rust
+
 TODO: прочитать:
   - https://hovav.net/ucsd/talks/blackhat08.html
   - https://people.eecs.berkeley.edu/~dawnsong/papers/Oakland13-SoK-CR.pdf

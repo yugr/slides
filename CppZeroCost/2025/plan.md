@@ -564,7 +564,7 @@ Heap overflow атаки:
   $ g++ -D_GLIBCXX_ASSERTIONS tmp.cc
   $ ./a.out
   /usr/include/c++/12/bits/stl_vector.h:1123: std::vector<_Tp, _Alloc>::reference std::vector<_Tp, _Alloc>::operator[](size_type) [with _Tp = int; _Alloc = std::allocator<int>; reference = int&; size_type = long unsigned int]: Assertion '__n < this->size()' failed.
-Aborted
+  Aborted
   ```
 - целевые уязвимости и распространённость:
   * индексные проверки предотвращают buffer overflow (см. статистику выше)

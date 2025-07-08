@@ -56,10 +56,15 @@
 
 TODO:
   - отдельный слайд про Rust
+  - подсветить конфликты опций
 
 TODO: прочитать:
   - https://hovav.net/ucsd/talks/blackhat08.html
   - https://people.eecs.berkeley.edu/~dawnsong/papers/Oakland13-SoK-CR.pdf
   - https://vvdveen.com/publications/RAID2012.pdf
   - https://stackoverflow.com/questions/34616086/union-punning-structs-w-common-initial-sequence-why-does-c-99-but-not (low prio)
-  - примеры атак: https://guyinatuxedo.github.io (low prio)
+  - примеры атак:
+    * https://guyinatuxedo.github.io (low prio)
+  - CFI:
+    * https://blog.trailofbits.com/2016/10/17/lets-talk-about-cfi-clang-edition/
+    * https://developers.redhat.com/articles/2022/06/02/use-compiler-flags-stack-protection-gcc-and-clang

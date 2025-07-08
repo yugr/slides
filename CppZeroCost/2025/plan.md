@@ -56,7 +56,7 @@ Time: 15 мин.
 Assignee: Юрий
 
 Effort (plan): 36h
-Effort (slides): 3h
+Effort (slides): 4.5h
 
 ## Атаки (exploits)
 
@@ -382,7 +382,7 @@ Heap overflow атаки:
   * 3% на Clang (69 сек. -> 71 сек. на CGBuiltin.cpp)
 - проблемы:
   * false positives: неизвестны
-  * false negatives: неизвестны
+  * false negatives:
   * в `-fsanitize=safe-stack` нет поддержки проверок в динамических библиотеках
     + их можно использовать, но они не будут использовать ShadowStack
     + возможно [поддержать их несложно](https://github.com/ossf/wg-best-practices-os-developers/issues/267#issuecomment-1835359166)
@@ -400,7 +400,8 @@ Heap overflow атаки:
   * https://blog.includesecurity.com/2015/11/strengths-and-weaknesses-of-llvms-safestack-buffer-overflow-protection/
 - использование в реальных проектах:
   * не включён по умолчанию в дистрах (даже не поддержан в текущей версии GCC в них)
-  * не поддержан в checksec (можно просто искать публичный символ `__safestack_init`)
+  * пока [не поддержан](https://github.com/slimm609/checksec/issues/301)
+    в checksec (можно просто искать публичный символ `__safestack_init`)
 
 ## Фортификация (`_FORTIFY_SOURCE`)
 
@@ -437,8 +438,8 @@ Heap overflow атаки:
       ```
   * как можно видеть реализация проверки требует совместной работы
     библиотеки (подмена стандартной функции на chk-версию) и компилятора (вычисление доп. параметров)
-  * конкретный список проверяемых функций можно уточнить в реализации библиотеки
-    (Glibc или Musl); как минимум:
+  * конкретный список проверяемых функций можно уточнить в реализации библиотеки Glibc;
+    как минимум:
     + printf and friends - %n допускается только в readonly-строках (проверяется по `/proc/self/maps`)
     + string.h APIs (`memcpy`, `memset`, `strcpy`, `strcat`, `bzero`, `bcopy`, etc.) - проверки диапазона
     + unistd.h APIs (`read`, `pread`, `readlink`, etc.) - проверки диапазона
@@ -490,7 +491,7 @@ Heap overflow атаки:
       для `memcpy_chk`, `memmove_chk`, `memset_chk`, но этого мало
 - оверхед:
   * [`_FORTIFY_SOURCE=2` gives 3% ffmpeg overhead](https://zatoichi-engineer.github.io/2017/10/06/fortify-source.html)
-  * 2% на Clang (67 сек. -> 68.5 сек. на CGBuiltin.cpp, `-D_FORTIFY_SOURCE=2`)
+  * 2% на Clang (67 сек. -> 68.5 сек. на CGBuiltin.cpp, `-D_FORTIFY_SOURCE=3`)
 - проблемы:
   * false positives: неизвестны
   * false negatives
@@ -505,7 +506,7 @@ Heap overflow атаки:
 - сравнение с безопасными языками
   * Rust включает обязательные (и неотключаемые) проверки диапазанов
 - как включить:
-  * для явного включения используется `-D_FORTIFY_SOURCE=2` или -`D_FORTIFY_SOURCE=3`
+  * для явного включения используется `-D_FORTIFY_SOURCE=2` или `-D_FORTIFY_SOURCE=3`
     + до тех пор пока не появится `-D_FORTIFY_SOURCE=4` :)
   * standalone реализация: https://git.2f30.org/fortify-headers/files.html
   * проверка в дистре:
@@ -630,8 +631,7 @@ Aborted
     + канарейки
   * Glibc
     + pointer encryption - XOR всех указателей на функции с канарейкой
-    + можно вызвать в начале программы [функцию mcheck](https://www.gnu.org/software/libc/manual/html_node/Heap-Consistency-Checking.html)
-      для усиленных проверок heap consistency
+    + усиленные проверки heap consistency ([функция mcheck](https://www.gnu.org/software/libc/manual/html_node/Heap-Consistency-Checking.html))
 - пример ошибки
   ```
   $ cat repro.c
@@ -687,8 +687,6 @@ Aborted
   * false positives: неизвестны
   * TODO: false negatives (искать "bypassing FEATURE")
   * атаки на Scudo: https://www.usenix.org/system/files/woot24-mao.pdf
-  * поддержка динамических библиотек
-  * поддержка на разных платформах
 - сравнение с безопасными языками
   * в Rust невозможны ошибки памяти
 - как включить:

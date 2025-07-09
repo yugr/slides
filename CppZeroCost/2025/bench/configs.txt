@@ -14,4 +14,6 @@ Asan:gcc:::-DLLVM_USE_SANITIZER=Address
 # Some flags are only available in Clang++
 ClangDefault:clang:::
 ClangUBsan:clang:-fsanitize=undefined -fsanitize-minimal-runtime:-fsanitize-minimal-runtime:
+ClangIOF:clang:-fsanitize=signed-integer-overflow,pointer-overflow -fsanitize-minimal-runtime:-fsanitize-minimal-runtime:
+ClangBounds:clang:-fsanitize=bounds -fsanitize-minimal-runtime:-fsanitize-minimal-runtime:
 SafeStack:clang:-fsanitize=safe-stack::

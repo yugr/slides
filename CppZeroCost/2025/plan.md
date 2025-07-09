@@ -29,7 +29,7 @@ Assignee: Роман
   * замеры normal vs hardening (libc++ checks, `_FORTIFY_SOURCE`, stack protector) vs Asan:
     + Stack Protector: 2%
     + Fortify (`_FORTIFY_SOURCE=3`): 2%
-    + libc++ checks (`_GLIBCXX_ASSERTIONS`): 3.5%
+    + STL checks (`_GLIBCXX_ASSERTIONS`): 3.5%
     + Asan: 4.7x
 
 TODO:
@@ -921,6 +921,7 @@ Heap overflow атаки:
   * [включён в Chrome](https://issues.chromium.org/issues/40633061)
     + исправление и отключение hot paths заняло ~4 месяца
   * [не включён в Firefox](https://serge-sans-paille.github.io/pythran-stories/trivial-auto-var-init-experiments.html)
+  * [включён в Android user/kernel space](https://android-developers.googleblog.com/2020/06/system-hardening-in-android-11.html)
 - статьи:
   * https://github.com/microsoft/MSRC-Security-Research/blob/master/presentations/2019_09_CppCon/CppCon2019%20-%20Killing%20Uninitialized%20Memory.pdf
 
@@ -1097,6 +1098,7 @@ Heap overflow атаки:
       + включаются по `-mbranch-protection`
     * also `-fcf-protection`
     * also https://learn.microsoft.com/en-us/windows/win32/secbp/control-flow-guard
+    * включена по дефолту на Android
   - [ARM Memory Tagging Extensions](https://web.archive.org/web/20241016154235/https://community.arm.com/arm-community-blogs/b/architectures-and-processors-blog/posts/enhanced-security-through-mte)
 
 # (3) Hardening под капотом на примере LLVM

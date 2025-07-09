@@ -57,8 +57,15 @@
 TODO:
   - отдельный слайд про Rust
   - подсветить конфликты опций (в слайдах про недостатки)
-  - опции сборки критического софта (что кроме браузеров ?)
+  - опции сборки критического софта:
+    * браузеры, чаты и почтовые клиенты, интерпретаторы (Python, PHP), БД, pdf/image-читалки, OpenOffice, etc.
     * добавить про дефолтные опции таких пакетов в соотв. разделы
+  - можно ли заменить `-Wl,-z` на `-z` ?
+  - исследовать ситуацию с `DEB_BUILD_HARDENING`
+    * на Debian (включён для [уязвимых пакетов](https://wiki.debian.org/ReleaseGoals/SecurityHardeningBuildFlags) ?)
+    * на Ubuntu (включён по умолчанию ?)
+  - GWP Asan, HW Asan
+  - https://patchwork.ozlabs.org/project/glibc/patch/57CDAB08.8060601@samsung.com/
 
 TODO: прочитать:
   - https://hovav.net/ucsd/talks/blackhat08.html
@@ -70,3 +77,4 @@ TODO: прочитать:
   - CFI:
     * https://blog.trailofbits.com/2016/10/17/lets-talk-about-cfi-clang-edition/
     * https://developers.redhat.com/articles/2022/06/02/use-compiler-flags-stack-protection-gcc-and-clang
+  - https://android-developers.googleblog.com/2020/06/system-hardening-in-android-11.html

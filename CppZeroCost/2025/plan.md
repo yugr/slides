@@ -56,7 +56,7 @@ Time: 15 мин.
 Assignee: Юрий
 
 Effort (plan): 36h
-Effort (slides): 5h
+Effort (slides): 7h
 
 ## Атаки (exploits)
 
@@ -103,7 +103,9 @@ Heap overflow атаки:
   - integer overflow:
     * ~1% CVE и 1.5% KEV в 2024
     * [Mitre CWE Top 25 2024](https://cwe.mitre.org/top25/archive/2024/2024_cwe_top25.html): место 23
-  - неинициализированные данные
+  - неинициализированные данные:
+    * 80 CVE (0.001%) и 0 KEV в 2024
+    * скорее всего большая часть CVE отнесена к результирующим CWE (buffer overflow, etc.)
 
 Некоторые указанные ниже методы можно детектировать в уже собранном приложении (или библиотеке)
 с помощью утилиты `checksec` (но не все).
@@ -959,7 +961,7 @@ Heap overflow атаки:
 - эквивалентные отладочные проверки:
   * UBsan/Isan может использоваться и как отладочный инструмент
 - оверхед:
-  * [до 50% на SPEC](https://arxiv.org/pdf/1711.08108)
+  * [до 2x на SPEC](https://arxiv.org/pdf/1711.08108)
   * 3x оверхед на Clang (69 сек. -> 204 сек. на CGBuiltin.cpp)
 - проблемы
   - false positives:

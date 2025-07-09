@@ -485,9 +485,8 @@ Heap overflow атаки:
 - возможные расширения:
   * проверки в STL (см. ниже)
   * `-fsanitize=bounds`
-    + проверки скалярных обращений к массивам
+    + проверки скалярных обращений к массивам констаного размера и VLA (аналог `_FORTIFY_SOURCE=2`)
     + нет оверхеда при компиляции CGBuiltin.cpp (68 сек.)
-    + TODO: как так может быть ?!
 - эквивалентные отладочные проверки:
   * аналогичные проверки, но намного более эффективные и медленные, делают Asan и Valgrind
   * важно отметить что Asan [не умеет анализировать `XXX_chk`-функции](https://github.com/google/sanitizers/issues/247)
@@ -499,6 +498,7 @@ Heap overflow атаки:
 - оверхед:
   * [`_FORTIFY_SOURCE=2` gives 3% ffmpeg overhead](https://zatoichi-engineer.github.io/2017/10/06/fortify-source.html)
   * 2% на Clang (67 сек. -> 68.5 сек. на CGBuiltin.cpp, `-D_FORTIFY_SOURCE=3`)
+  * без изменений на Clang (67 сек. на CGBuiltin.cpp, `-D_FORTIFY_SOURCE=2`)
 - проблемы:
   * false positives: неизвестны
   * false negatives

@@ -5,6 +5,7 @@ RELRO:gcc::-Wl,-z,relro -Wl,-z,now:
 StackProtector:gcc:-fstack-protector-strong::
 StackClash:gcc:-fstack-clash-protection::
 TrickyOpts:gcc:-fno-delete-null-pointer-checks -fno-strict-overflow -fno-strict-aliasing::
+Fortify2:gcc:-D_FORTIFY_SOURCE=2::
 Fortify3:gcc:-D_FORTIFY_SOURCE=3::
 HardenedSTL:gcc:-D_GLIBCXX_ASSERTIONS::
 Asan:gcc:::-DLLVM_USE_SANITIZER=Address

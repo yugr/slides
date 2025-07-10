@@ -79,3 +79,4 @@ TODO: прочитать:
     * https://blog.trailofbits.com/2016/10/17/lets-talk-about-cfi-clang-edition/
     * https://developers.redhat.com/articles/2022/06/02/use-compiler-flags-stack-protection-gcc-and-clang
   - https://android-developers.googleblog.com/2020/06/system-hardening-in-android-11.html
+  - https://web.ist.utl.pt/nuno.lopes/pubs/ub-pldi25.pdf

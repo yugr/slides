@@ -1105,6 +1105,7 @@ Heap overflow атаки:
     * also https://learn.microsoft.com/en-us/windows/win32/secbp/control-flow-guard
     * включена по дефолту на Android
   - [ARM Memory Tagging Extensions](https://web.archive.org/web/20241016154235/https://community.arm.com/arm-community-blogs/b/architectures-and-processors-blog/posts/enhanced-security-through-mte)
+  - `-fstrict-flex-arrays=3`
 
 # (3) Hardening под капотом на примере LLVM
 

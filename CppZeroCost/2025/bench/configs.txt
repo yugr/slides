@@ -9,6 +9,7 @@ Fortify2:gcc:-D_FORTIFY_SOURCE=2::
 Fortify3:gcc:-D_FORTIFY_SOURCE=3::
 HardenedSTL:gcc:-D_GLIBCXX_ASSERTIONS::
 Asan:gcc:::-DLLVM_USE_SANITIZER=Address
+CET:gcc:-fcf-protection=full:::
 # hardened_malloc can be tested manually via LD_PRELOAD
 # TODO: -fhardened
 
@@ -18,3 +19,4 @@ ClangUBsan:clang:-fsanitize=undefined -fsanitize-minimal-runtime:-fsanitize-mini
 ClangIOF:clang:-fsanitize=signed-integer-overflow,pointer-overflow -fsanitize-minimal-runtime:-fsanitize-minimal-runtime:
 ClangBounds:clang:-fsanitize=bounds -fsanitize-minimal-runtime:-fsanitize-minimal-runtime:
 SafeStack:clang:-fsanitize=safe-stack::
+#CFI:clang:-fsanitize=cfi:-fsanitize=cfi:  Clang on my server does not support CFI...

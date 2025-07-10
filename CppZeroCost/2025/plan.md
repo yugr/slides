@@ -75,7 +75,7 @@ Stack buffer overflow атаки (в хронологическом порядк
 
 Heap overflow атаки:
   - более сложные и разнообразные:
-    * испортить данные в несвязанном буфере (например указатели на функции)
+    * испортить данные в несвязанном буфере (например указатели на функции или на vtable)
     * поменять метаданные аллокатора, чтобы заставить его менять произвольные адреса
       (например поменять адрес malloc hook и вызвать его при следующем malloc,
       House of Force)
@@ -1101,7 +1101,7 @@ Heap overflow атаки:
     * проблемы при немонолитное иерархии (дети в других dso), нужна спец опция и перф оверхед)
     * новые аппаратные проверки (ARM PAC, ARM BTI ~ Intel IBT (часть Intel CET))
       + включаются по `-mbranch-protection`
-    * also `-fcf-protection`
+    * also `-fcf-protection` (связь с `-mshstk`, `-mibt`, `-mcet`)
     * also https://learn.microsoft.com/en-us/windows/win32/secbp/control-flow-guard
     * включена по дефолту на Android
   - [ARM Memory Tagging Extensions](https://web.archive.org/web/20241016154235/https://community.arm.com/arm-community-blogs/b/architectures-and-processors-blog/posts/enhanced-security-through-mte)

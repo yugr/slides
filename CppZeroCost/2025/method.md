@@ -64,8 +64,9 @@ TODO:
   - исследовать ситуацию с `DEB_BUILD_HARDENING`
     * на Debian (включён для [уязвимых пакетов](https://wiki.debian.org/ReleaseGoals/SecurityHardeningBuildFlags) ?)
     * на Ubuntu (включён по умолчанию ?)
-  - GWP Asan, HW Asan
+  - GWP Asan, HW Asan, A/B тестирование
   - https://patchwork.ozlabs.org/project/glibc/patch/57CDAB08.8060601@samsung.com/
+  - `-fstrict-flex-arrays=3`
 
 TODO: прочитать:
   - https://hovav.net/ucsd/talks/blackhat08.html

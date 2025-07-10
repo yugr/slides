@@ -19,4 +19,5 @@ ClangUBsan:clang:-fsanitize=undefined -fsanitize-minimal-runtime:-fsanitize-mini
 ClangIOF:clang:-fsanitize=signed-integer-overflow,pointer-overflow -fsanitize-minimal-runtime:-fsanitize-minimal-runtime:
 ClangBounds:clang:-fsanitize=bounds -fsanitize-minimal-runtime:-fsanitize-minimal-runtime:
 SafeStack:clang:-fsanitize=safe-stack::
-#CFI:clang:-fsanitize=cfi:-fsanitize=cfi:  Clang on my server does not support CFI...
+NoCFI:clang:-flto=thin -fvisibility=hidden:-flto=thin -fvisibility=hidden:
+CFI:clang:-flto=thin -fvisibility=hidden -fsanitize=cfi:-flto=thin -fvisibility=hidden -fsanitize=cfi:

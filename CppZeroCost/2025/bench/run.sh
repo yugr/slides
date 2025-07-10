@@ -10,6 +10,7 @@ J=$((($(nproc) + 1)/ 2))
 OUT=./results
 REPEAT=3
 V=0
+NO_RUN=
 
 usage() {
   cat <<EOF
@@ -21,6 +22,7 @@ Options:
   -j N            Build parallelism (default $J).
   -o OUTDIR       Where to store results (default $OUT).
   -n REPEAT       How many times to compile each file (default $REPEAT).
+  --no-run        Just build, do not run benchmarks.
   --help, -h      Print help and exit.
   --verbose, -v   Print diagnostic info
                   (can be specified more than once).
@@ -41,7 +43,7 @@ EOF
 
 me=$(basename $0)
 
-ARGS=$(getopt -o 'hj:n:o:v' --long 'llvm:,verbose,help' -n "$(basename $0)" -- "$@")
+ARGS=$(getopt -o 'hj:n:o:v' --long 'llvm:,no-run,verbose,help' -n "$(basename $0)" -- "$@")
 eval set -- "$ARGS"
 
 while true; do
@@ -61,6 +63,10 @@ while true; do
     -n)
       REPEAT=$2
       shift 2
+      ;;
+    --no-run)
+      NO_RUN=1
+      shift
       ;;
     -h | --help)
       usage
@@ -187,6 +193,8 @@ while read cfg; do
     -DLLVM_TARGETS_TO_BUILD=X86 -DLLVM_ENABLE_PROJECTS=clang \
     -B "$B" "$LLVM"/llvm
   cmake --build "$B" -- -j$J clang
+
+  test -z "$NO_RUN" || continue
 
   echo "Benchmarking $name..."
   while read t; do

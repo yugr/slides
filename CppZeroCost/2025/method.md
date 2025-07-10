@@ -73,8 +73,10 @@ TODO: прочитать:
   - https://people.eecs.berkeley.edu/~dawnsong/papers/Oakland13-SoK-CR.pdf
   - https://vvdveen.com/publications/RAID2012.pdf
   - https://stackoverflow.com/questions/34616086/union-punning-structs-w-common-initial-sequence-why-does-c-99-but-not (low prio)
-  - примеры атак:
+  - атаки:
     * https://guyinatuxedo.github.io (low prio)
+    * https://www.forrest-orr.net/post/a-modern-exploration-of-windows-memory-corruption-exploits-part-i-stack-overflows
+    * https://www.jerkeby.se/newsletter/posts/history-of-rop/
   - CFI:
     * https://blog.trailofbits.com/2016/10/17/lets-talk-about-cfi-clang-edition/
     * https://developers.redhat.com/articles/2022/06/02/use-compiler-flags-stack-protection-gcc-and-clang

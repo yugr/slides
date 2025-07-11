@@ -1103,6 +1103,7 @@ Heap overflow атаки:
     * новые аппаратные проверки (ARM PAC, ARM BTI ~ Intel IBT (часть Intel CET))
       + включаются по `-mbranch-protection`
     * also `-fcf-protection` (связь с `-mshstk`, `-mibt`, `-mcet`)
+    * CGBuiltin.cpp без изменений на `-fcf-protection` (67 сек.)
     * also https://learn.microsoft.com/en-us/windows/win32/secbp/control-flow-guard
     * включена по дефолту на Android
   - [ARM Memory Tagging Extensions](https://web.archive.org/web/20241016154235/https://community.arm.com/arm-community-blogs/b/architectures-and-processors-blog/posts/enhanced-security-through-mte)

@@ -1090,6 +1090,7 @@ Heap overflow атаки:
 - Опции GCC:
   * stack scrubbing - очистка стека при выходе из функции (`-fstrub`)
   * [`-fzero-call-used-regs`](https://www.semanticscholar.org/paper/Clean-the-Scratch-Registers%3A-A-Way-to-Mitigate-Rong-Xie/6f2ce4fd31baa0f6c02f9eb5c57b90d39fe5fa13) - очистка регистров при выходе из функции
+- HW-атаки (Spectre, etc.)
 
 ## TODO
 

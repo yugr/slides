@@ -82,3 +82,6 @@ TODO: прочитать:
     * https://developers.redhat.com/articles/2022/06/02/use-compiler-flags-stack-protection-gcc-and-clang
   - https://android-developers.googleblog.com/2020/06/system-hardening-in-android-11.html
   - https://web.ist.utl.pt/nuno.lopes/pubs/ub-pldi25.pdf
+  - https://lwn.net/Articles/856514/
+  - https://struct.github.io/cross_dso_cfi.html
+  - https://nebelwelt.net/blog/20181226-CFIeval.html

@@ -100,6 +100,8 @@ Heap overflow атаки:
     * не учтены heap overflow KEVs, которые попали в buffer overflow
 
 Другие виды уязвимостей:
+  - любые ошибки памяти:
+    * 13% CVE и 12% KEV в 2024
   - integer overflow:
     * ~1% CVE и 1.5% KEV в 2024
     * [Mitre CWE Top 25 2024](https://cwe.mitre.org/top25/archive/2024/2024_cwe_top25.html): место 23
@@ -347,7 +349,7 @@ Heap overflow атаки:
   * https://developers.redhat.com/blog/2020/05/22/stack-clash-mitigation-in-gcc-part-3
 - использование в реальных проектах
   * пакеты Fedora (и Ubuntu) дефолтно собираются с `-fstack-clash-protection`
-  * пакеты Debian [похоже](https://github.com/jvoisin/compiler-flags-distro/issues/12) собираются пока без этого флага
+  * пакеты Debian [похоже нет](https://github.com/jvoisin/compiler-flags-distro/issues/12)
   * checksec сейчас [не обнаруживает stack clash](https://github.com/slimm609/checksec/issues/300)
     + пришлось написать [свой скрипт](scripts/has_stack_clash_protection.py)
     + на Ubuntu почти все программы защищены
@@ -1070,6 +1072,114 @@ Heap overflow атаки:
   * дефолтно не используются в дистрибутивах
   * TODO: проверить сколько пакетов используют эти флаги (как ?)
 
+## Control-flow integrity
+
+- пример ошибки:
+  ```
+  $ cat repro.cc
+  #include <stdio.h>
+
+  struct A { virtual void foo() {} };
+  struct B : A { void foo() override {} };
+
+  struct Evil { virtual void foo() { printf("You have been pwned\n"); } };
+
+  A *tmp = new B;
+
+  int main() {
+    A *a = new A;
+    Evil *e = new Evil;
+    asm("mov %1, %0" : "+r"(a) : "r"(e));
+    a->foo();
+  }
+
+  # Подмена объекта
+  $ clang++ repro.cc -O2
+  $ ./a.out
+  You have been pwned
+
+  # CFI обнаруживает подмену
+  $ clang++ -fsanitize=cfi -flto -fvisibility=hidden repro.cc -O2
+  $ ./a.out
+  Illegal instruction
+  ```
+- история:
+  - generic-термин для любых нарушений исходного control-flow
+  - впервые введён Abadi et al. в 2005 (https://mihaibudiu.github.io/work/ccs05.pdf)
+  - в широком смысле Stack Protector и Shadow Stack - варианты CFI
+  - два типа: forward-edge (проверка call/jump) и backward-edge (проверка ret)
+  - много различных методик в статьях
+  - обычно под CFI понимают современные методы: LLVM CFI, Intel CET и AArch64 CFI (PAC и BTI)
+  - LLVM CFI (2015, Clang 3.7)
+  - Microsoft Control Flow Guard, 2014 (https://learn.microsoft.com/en-us/windows/win32/secbp/control-flow-guard)
+  - Intel CET, 2020 (спека 2016)
+- LLVM CFI:
+  * компиляторная инструментация
+  * не поддержана в GCC
+  * только forward-edge
+  * проверка совпадения статического и динамического прототипа при вызове функции по указателю
+  * поддерживает vtables и обычные указатели на функции
+  * также может использоваться для доп. проверок (корректность C++ кастов и пр.)
+  * проблемы: немонолитные иерархии (вызовы между границами DSO)
+    * нужна спец. опция и дополнительный оверхед
+  * TODO: проверяются ли jump tables
+- Аппаратная поддержка:
+  * Intel CET и AArch64 CFI
+  * поддержана в GCC и Clang
+  * более грубые проверки чем LLVM CFI
+  * Intel IBT, AArch64 BTI:
+    + помечаем возможные цели всех бранчей/вызовов в программе спец. инструкцией-хинтом
+  * CGBuiltin.cpp без изменений на `-fcf-protection` (67 сек.)
+- целевые уязвимости и распространённость (анализ CVE/KVE):
+  * дополнительная защита от любых ошибок памяти (overflow, heap errors, etc)
+  * см. статистику выше
+- TODO: возможные расширения
+  * https://grsecurity.net/rap_faq
+- эквивалентные отладочные проверки:
+  * отсутствуют (Asan, UBsan и Valgrind не проверяют типы)
+- оверхед
+  * не получилось протестировать CGBuiltin.cpp т.к. Clang не поддерживает CFI
+  * [<1% бенмарк Dromaeo](https://clang.llvm.org/docs/ControlFlowIntegrity.html)
+  * [<1% Chrome](https://www.chromium.org/developers/testing/control-flow-integrity/)
+  * [нет оверхеда на Android](https://source.android.com/docs/security/test/cfi)
+  * [до 10% увеличение кода](https://www.chromium.org/developers/testing/control-flow-integrity/)
+- проблемы:
+  * false positives:
+    + большое количество софта надо дорабатывать для LLVM CFI (например падает Clang)
+    + TODO: в чём проблема Clang
+  * false negatives:
+    + LLVM CFI: проверяются только несоответствия на уровне типов (хакер может вызвать неправильную функцию если типы совпадают)
+    + CET: вообще не проверяет типы
+  * проблемы с интеграцией к LLVM CFI:
+    + требует LTO
+    + TODO: проблемы с динамическими библиотеками
+  * фрагментация: три несвязанных решения с разными, GCC не поддерживает LLVM CFI
+- сравнение с безопасными языками
+  * Rust поддерживает `-Zsanitizer=cfi`, но она не включена по умолчанию
+  * нужна только для unsafe и внешнего кода
+  * TODO: посмотреть [tracking issue](https://github.com/rust-lang/rust/issues/89653)
+- как включить
+  * LLVM CFI:
+    + не включена по умолчанию ни в GCC, ни в Clang на Ubuntu, Debian, Fedora
+    + включается по `-fsanitize=cfi`, также требует `-flto=thin -fvisibility=hidden`
+    + LTO для построения полного call graph программы, visibility для сокращения внешних вызовов
+    + TODO: ограничения на динамическую линковку
+  * Intel CET:
+    + включается по `-fcf-protection`
+    + включена по умолчанию в GCC на [Ubuntu](https://wiki.ubuntu.com/ToolChain/CompilerFlags)
+    + раньше ещё нужно было указывать флаги `-mcet`, `-mshstk` и `-mibt`,
+      теперь [они не нужны](https://reviews.llvm.org/D46881)
+  * Windows (Control Flow Guard): `/guard:cf`)
+  * TODO: `-mbranch-protection`
+- TODO: ссылка на хорошую статью
+- TODO: использование в реальных проектах (дистрах, браузерах и т.д.)
+  * включена по дефолту на Android
+  * `-fsanitize=cfi` не включена в Ubuntu, Debian, Fedora (логично, ведь GCC её не поддерживает и она требует LTO)
+  * Intel CET дефолтно включён для пакетов в [Ubuntu](https://wiki.ubuntu.com/ToolChain/CompilerFlags),
+    [Fedora](https://fedoraproject.org/wiki/Changes/HardeningFlags28) и
+    [Debian](https://git.dpkg.org/cgit/dpkg/dpkg.git/commit/?id=8f5aca71c1435c9913d5562b8cae68b751dff663)
+  * checksec не обнаруживает LLVM CFI и Intel CET (непонятно как это сделать)
+
 ## `-fhardened`
 
 - зонтичная опция для наиболее важных hardened-оптимизаций
@@ -1095,17 +1205,6 @@ Heap overflow атаки:
 ## TODO
 
 Добавить инфу о проверках:
-  - CFI (ARM PAC, Intel CET)
-    * verify static and dynamic types match
-    * also checks for dynamic types for vcalls, C++ casts, etc.
-    * компиляторная инструментация
-    * проблемы при немонолитное иерархии (дети в других dso), нужна спец опция и перф оверхед)
-    * новые аппаратные проверки (ARM PAC, ARM BTI ~ Intel IBT (часть Intel CET))
-      + включаются по `-mbranch-protection`
-    * also `-fcf-protection` (связь с `-mshstk`, `-mibt`, `-mcet`)
-    * CGBuiltin.cpp без изменений на `-fcf-protection` (67 сек.)
-    * also https://learn.microsoft.com/en-us/windows/win32/secbp/control-flow-guard
-    * включена по дефолту на Android
   - [ARM Memory Tagging Extensions](https://web.archive.org/web/20241016154235/https://community.arm.com/arm-community-blogs/b/architectures-and-processors-blog/posts/enhanced-security-through-mte)
   - `-fstrict-flex-arrays=3`
 

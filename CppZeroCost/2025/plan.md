@@ -701,6 +701,7 @@ Heap overflow атаки:
   * в Rust невозможны ошибки памяти
 - как включить:
   * обычно достаточно `LD_PRELOAD=path/to/new/allocator.so`
+  * проверки в Glibc включаются по `MALLOC_CHECK_=3` или `GLIBC_TUNABLES=glibc.malloc.check=3`
 - ссылки на статьи:
   * https://www.l3harris.com/newsroom/editorial/2023/10/scudo-hardened-allocator-unofficial-internals-documentation
   * https://github.com/struct/isoalloc/blob/master/SECURITY_COMPARISON.MD
@@ -1162,7 +1163,7 @@ Heap overflow атаки:
       - нужна спец. опция и дополнительный оверхед
   * фрагментация: три несвязанных решения с разными, GCC не поддерживает LLVM CFI
 - сравнение с безопасными языками
-  * Rust поддерживает `-Zsanitizer=cfi`, но она не включена по умолчанию
+  * Rust поддерживает `-Zsanitizer=cfi` и `-Zcf-protection=full`, но они не включены по умолчанию
   * нужна только для unsafe и внешнего кода
   * TODO: посмотреть [tracking issue](https://github.com/rust-lang/rust/issues/89653)
 - как включить
@@ -1190,7 +1191,9 @@ Heap overflow атаки:
     [Fedora](https://fedoraproject.org/wiki/Changes/HardeningFlags28) и
     [Debian](https://git.dpkg.org/cgit/dpkg/dpkg.git/commit/?id=8f5aca71c1435c9913d5562b8cae68b751dff663)
   * То же для AArch64 CFI
-  * checksec не обнаруживает LLVM CFI и Intel CET (непонятно как это сделать)
+  * checksec не обнаруживает
+    + LLVM CFI (непонятно как это сделать)
+    + Intel CET ([checksec #302](https://github.com/slimm609/checksec/issues/302))
 
 ## `-fhardened`
 

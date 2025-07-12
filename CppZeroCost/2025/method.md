@@ -81,12 +81,7 @@ TODO: прочитать:
     * https://www.forrest-orr.net/post/a-modern-exploration-of-windows-memory-corruption-exploits-part-i-stack-overflows
     * https://www.jerkeby.se/newsletter/posts/history-of-rop/
   - CFI:
-    * https://blog.trailofbits.com/2016/10/17/lets-talk-about-cfi-clang-edition/
-    * https://developers.redhat.com/articles/2022/06/02/use-compiler-flags-stack-protection-gcc-and-clang
-    * https://lwn.net/Articles/856514/
-    * https://nebelwelt.net/blog/20181226-CFIeval.html
-    * https://struct.github.io/cross_dso_cfi.html
-    * https://maskray.me/blog/2022-12-18-control-flow-integrity
+    * https://sipearl.com/wp-content/uploads/2023/10/SiPearl-White_Paper_Control_Flow_Integrity-on-Arm64.pdf
+    * https://lists.debian.org/debian-dpkg/2022/05/msg00022.html
   - MTE:
     * https://source.android.com/docs/security/test/tagged-pointers
-    * https://sipearl.com/wp-content/uploads/2023/10/SiPearl-White_Paper_Control_Flow_Integrity-on-Arm64.pdf

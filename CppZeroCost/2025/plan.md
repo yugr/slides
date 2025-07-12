@@ -55,7 +55,7 @@ Time: 15 мин.
 
 Assignee: Юрий
 
-Effort (plan): 36h
+Effort (plan): 41h
 Effort (slides): 7h
 
 ## Атаки (exploits)
@@ -296,6 +296,7 @@ Heap overflow атаки:
     + уязвима к info leakage (если канарейка утекла, то защита неэффективна)
     + если канарейка хранится в том же сегменте что и стек, хакер может переписать и её
     + не защищает от переписывания указателей на функции на стеке
+    + не защищает от перезаписи адреса возврата без overflow
 - сравнение с безопасными языками
   * [Rust](https://doc.rust-lang.org/rustc/exploit-mitigations.html#stack-smashing-protection):
       + вообще коду на Rust эта опция не требуется, но она полезна в случае вызова внешних библиотек
@@ -1119,40 +1120,46 @@ Heap overflow атаки:
   * только forward-edge
   * проверка совпадения статического и динамического прототипа при вызове функции по указателю
   * поддерживает vtables и обычные указатели на функции
+    + алгоритмы проверки для них сильно различаются
   * также может использоваться для доп. проверок (корректность C++ кастов и пр.)
-  * проблемы: немонолитные иерархии (вызовы между границами DSO)
-    * нужна спец. опция и дополнительный оверхед
-  * TODO: проверяются ли jump tables
 - Аппаратная поддержка:
   * Intel CET и AArch64 CFI
   * поддержана в GCC и Clang
   * более грубые проверки чем LLVM CFI
-  * Intel IBT, AArch64 BTI:
-    + помечаем возможные цели всех бранчей/вызовов в программе спец. инструкцией-хинтом
-  * CGBuiltin.cpp без изменений на `-fcf-protection` (67 сек.)
+  * Intel IBT:
+    + помечаем возможные цели всех бранчей/вызовов/возвратов в программе спец. инструкцией-хинтом BTI
+    + TODO: есть ещё какие-то проверки в CET (e.g. `-mshstk`) ?
+  * AArch64 CFI (PAC, BTI):
+    + BTI - аналогичный функционал Intel CET BTI
+    + PAC (Pointer Auth):
+      - верхние биты адреса возврата используются для вычисления криптостойкой чексуммы
+        (адрес возврата + адрес фрейма + секрет процесса)
+      - проверяются перед `ret`
 - целевые уязвимости и распространённость (анализ CVE/KVE):
   * дополнительная защита от любых ошибок памяти (overflow, heap errors, etc)
   * см. статистику выше
-- TODO: возможные расширения
-  * https://grsecurity.net/rap_faq
 - эквивалентные отладочные проверки:
   * отсутствуют (Asan, UBsan и Valgrind не проверяют типы)
 - оверхед
-  * не получилось протестировать CGBuiltin.cpp т.к. Clang не поддерживает CFI
+  * компиляция CGBuiltin.cpp компилятором Clang:
+    + без изменений на `-fcf-protection` (67 сек.)
+    + не получилось протестировать CGBuiltin.cpp т.к. Clang не проходит проверку CFI :)
   * [<1% бенмарк Dromaeo](https://clang.llvm.org/docs/ControlFlowIntegrity.html)
   * [<1% Chrome](https://www.chromium.org/developers/testing/control-flow-integrity/)
   * [нет оверхеда на Android](https://source.android.com/docs/security/test/cfi)
-  * [до 10% увеличение кода](https://www.chromium.org/developers/testing/control-flow-integrity/)
+  * [до 10% увеличение кода](https://www.chromium.org/developers/testing/control-flow-integrity/) (I$ misses)
 - проблемы:
   * false positives:
     + большое количество софта надо дорабатывать для LLVM CFI (например падает Clang)
-    + TODO: в чём проблема Clang
+    + TODO: в чём проблема со сборкой Clang ?
   * false negatives:
     + LLVM CFI: проверяются только несоответствия на уровне типов (хакер может вызвать неправильную функцию если типы совпадают)
     + CET: вообще не проверяет типы
+    + не проверяются jump tables, сгенерированные для `switch`-конструкций (только в CET есть `-mcet-switch`, дефолтно выключен)
   * проблемы с интеграцией к LLVM CFI:
     + требует LTO
-    + TODO: проблемы с динамическими библиотеками
+    + проблемы: немонолитные иерархии (вызовы между границами DSO)
+      - нужна спец. опция и дополнительный оверхед
   * фрагментация: три несвязанных решения с разными, GCC не поддерживает LLVM CFI
 - сравнение с безопасными языками
   * Rust поддерживает `-Zsanitizer=cfi`, но она не включена по умолчанию
@@ -1163,21 +1170,26 @@ Heap overflow атаки:
     + не включена по умолчанию ни в GCC, ни в Clang на Ubuntu, Debian, Fedora
     + включается по `-fsanitize=cfi`, также требует `-flto=thin -fvisibility=hidden`
     + LTO для построения полного call graph программы, visibility для сокращения внешних вызовов
-    + TODO: ограничения на динамическую линковку
+    + для библиотечных вызовов нужна `-fsanitize-cfi-cross-dso`
   * Intel CET:
     + включается по `-fcf-protection`
     + включена по умолчанию в GCC на [Ubuntu](https://wiki.ubuntu.com/ToolChain/CompilerFlags)
     + раньше ещё нужно было указывать флаги `-mcet`, `-mshstk` и `-mibt`,
       теперь [они не нужны](https://reviews.llvm.org/D46881)
   * Windows (Control Flow Guard): `/guard:cf`)
-  * TODO: `-mbranch-protection`
-- TODO: ссылка на хорошую статью
-- TODO: использование в реальных проектах (дистрах, браузерах и т.д.)
+  * AArch64 CFI: флаг `-mbranch-protection=standard`
+    + [никто не знает](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1021292#84)
+      почему это не сделано под `-fcf-protection` :(
+- ссылки на статьи:
+  * LLVM CFI: https://blog.trailofbits.com/2016/10/17/lets-talk-about-cfi-clang-edition/
+  * AArch64 CFI: https://lists.debian.org/debian-dpkg/2022/05/msg00022.html
+- использование в реальных проектах (дистрах, браузерах и т.д.)
   * включена по дефолту на Android
   * `-fsanitize=cfi` не включена в Ubuntu, Debian, Fedora (логично, ведь GCC её не поддерживает и она требует LTO)
   * Intel CET дефолтно включён для пакетов в [Ubuntu](https://wiki.ubuntu.com/ToolChain/CompilerFlags),
     [Fedora](https://fedoraproject.org/wiki/Changes/HardeningFlags28) и
     [Debian](https://git.dpkg.org/cgit/dpkg/dpkg.git/commit/?id=8f5aca71c1435c9913d5562b8cae68b751dff663)
+  * То же для AArch64 CFI
   * checksec не обнаруживает LLVM CFI и Intel CET (непонятно как это сделать)
 
 ## `-fhardened`
@@ -1207,6 +1219,7 @@ Heap overflow атаки:
 Добавить инфу о проверках:
   - [ARM Memory Tagging Extensions](https://web.archive.org/web/20241016154235/https://community.arm.com/arm-community-blogs/b/architectures-and-processors-blog/posts/enhanced-security-through-mte)
   - `-fstrict-flex-arrays=3`
+  - возможные расширения: https://grsecurity.net/rap_faq
 
 # (3) Hardening под капотом на примере LLVM
 

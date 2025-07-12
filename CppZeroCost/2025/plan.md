@@ -397,8 +397,8 @@ Heap overflow атаки:
 - как включить:
   * несколько реализаций:
     + SafeStack (`-fsanitize=safe-stack`) - [не меняет ABI](https://fuchsia.dev/fuchsia-src/concepts/kernel/safestack#interoperation_and_abi_effects)
-    + Intel CET Shadow Stack (`-mshstk`) - не меняет ABI, но требует аппаратной поддержки (Intel CET)
-      - TODO: как это связано с `-fcf-protection` ?
+    + ShadowStack (`mshstk`) - не меняет ABI, но требует аппаратной поддержки (Intel CET)
+      - входит в расширение Intel CET (`-fcf-protection`) - см. ниже
     + ShadowCallStack (`-fsanitize=shadow-call-stack` в GCC/Clang) - [не меняет ABI](https://fuchsia.dev/fuchsia-src/concepts/kernel/shadow_call_stack#interoperation_and_abi_effects)
       - AArch64-only
 - ссылка на статью:
@@ -1127,7 +1127,7 @@ Heap overflow атаки:
   * поддержана в GCC и Clang
   * более грубые проверки чем LLVM CFI
   * Intel IBT:
-    + помечаем возможные цели всех бранчей/вызовов/возвратов в программе спец. инструкцией-хинтом BTI
+    + помечаем возможные цели всех бранчей/вызовов/возвратов в программе спец. инструкцией-хинтом `endbr64`
     + TODO: есть ещё какие-то проверки в CET (e.g. `-mshstk`) ?
   * AArch64 CFI (PAC, BTI):
     + BTI - аналогичный функционал Intel CET BTI
@@ -1176,7 +1176,7 @@ Heap overflow атаки:
     + включена по умолчанию в GCC на [Ubuntu](https://wiki.ubuntu.com/ToolChain/CompilerFlags)
     + раньше ещё нужно было указывать флаги `-mcet`, `-mshstk` и `-mibt`,
       теперь [они не нужны](https://reviews.llvm.org/D46881)
-  * Windows (Control Flow Guard): `/guard:cf`)
+  * Windows (Control Flow Guard): `/guard:cf` (to be replaced with Xtended Flow Guard)
   * AArch64 CFI: флаг `-mbranch-protection=standard`
     + [никто не знает](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1021292#84)
       почему это не сделано под `-fcf-protection` :(

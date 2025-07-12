@@ -82,6 +82,5 @@ TODO: прочитать:
     * https://www.jerkeby.se/newsletter/posts/history-of-rop/
   - CFI:
     * https://sipearl.com/wp-content/uploads/2023/10/SiPearl-White_Paper_Control_Flow_Integrity-on-Arm64.pdf
-    * https://lists.debian.org/debian-dpkg/2022/05/msg00022.html
   - MTE:
     * https://source.android.com/docs/security/test/tagged-pointers

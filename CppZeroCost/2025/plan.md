@@ -977,7 +977,7 @@ Heap overflow атаки:
   - false positives:
     * Isan может выдавать ложные срабатывания
       (в частности нужен blacklist для кода в STL,
-       полагающегося на переполнение)
+       полагающегося на переполнение, флаг `-fsanitize-ignorelist`)
   - false negatives:
     * UBsan несовместим с `-fno-strict-overflow` и `-fwrapv`
     * может не обнаруживать некоторые баги,

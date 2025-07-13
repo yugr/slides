@@ -225,8 +225,9 @@ Heap overflow атаки:
   * Asan (и до некоторой степени Valgrind, за исключением stack overflow) обнаруживают причину подобных ошибок (buffer overflow)
 - проблемы:
   * рандомизируется только базовый адрес mmap
-    * хакер знает относительные смещения кода, глобальных переменных, таблиц GOT/PLT всех библиотек
+    * хакер знает относительные смещения кода, глобальных переменных, таблиц GOT/PLT программы и библиотек
     * если сливается адрес хотя бы одной сущности => хакер знает смещение всех остальных
+      + https://www.openwall.com/lists/oss-security/2018/02/27/5
     * см. про защиту GOT ниже
   * защита уязвима к info leakage
     + например [format string attach](https://en.m.wikipedia.org/wiki/Uncontrolled_format_string)
@@ -1164,7 +1165,7 @@ Heap overflow атаки:
 - оверхед
   * компиляция CGBuiltin.cpp компилятором Clang:
     + без изменений на `-fcf-protection` (67 сек.)
-    + не получилось протестировать CGBuiltin.cpp т.к. Clang не проходит проверку CFI :)
+    + 6% на `-fsanitize-cfi` (63 сек. -> 67 сек.)
   * [<1% бенмарк Dromaeo](https://clang.llvm.org/docs/ControlFlowIntegrity.html)
   * [<1% Chrome](https://www.chromium.org/developers/testing/control-flow-integrity/)
   * [нет оверхеда на Android](https://source.android.com/docs/security/test/cfi)

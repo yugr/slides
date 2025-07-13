@@ -36,7 +36,7 @@ TODO:
   - в расширенном смысле харденинг - интегральная активность: правила безопасной разработки + ограничения на деплой + проверки в рантайме (в компиляторе, библиотеках, ядре ОС) + настройки ОС
     * правила безопасной разработки (и тестирования):
       + пример интегрального подхода: [Linux Hardening Guide](https://madaidans-insecurities.github.io/guides/linux-hardening.html)
-      + допустимые API (запрет `gets` и `rand`, предпочтение `memset_s` и т.п.)
+      + допустимые API (запрет `gets` и `rand`, предпочтение `memset_s` и т.п., [C4996](https://learn.microsoft.com/en-us/cpp/error-messages/compiler-warnings/compiler-warning-level-3-c4996)
       + static analysis (в т.ч. обязательные варнинги помимо стандартных `-Wall -Wextra -Werror`, например `-Wformat=2 -Wconversion=2`, в Visual Studio есть спец. флаг `/sdl` для таких варнингов, контракты)
       + доп. проверки (asserts, контракты и т.п.)
       + пример неудачного внедения безопасных практик: [Updated Field Experience With Annex K — Bounds Checking Interfaces](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n1969.htm (2015))
@@ -45,9 +45,16 @@ TODO:
       + скрыть приватные символы из динамической таблицы символов
     * мы в докладе рассматриваем ТОЛЬКО рантайм-проверки в тулчейне (т.е. компиляторе и стд. библиотеках)
       + mitigation, не prevention
-  - требования к харденинг: низкий оверхед + высокая точность (low false positive rate) + простота интеграции (например не ломают ABI)
-  - слайд с выводами: какие флаги включить у себя в проде
-  - добавить доклад "Delivering Safe C++" в ссылки
+  - требования к харденинг:
+    + низкий оверхед
+    + высокая точность (low false positive rate)
+    + простота интеграции (например не ломают ABI)
+    + совместимость разных зашит
+  - слайд с выводами:
+    + какие флаги включить у себя в проде
+    + будущее развитие языка
+  - ссылки:
+    + Delivering Safe C++
 
 # (2) Исчерпывающее перечисление: stack protector, pie, cfi, minimal ubsan, fortify, etc.
 
@@ -55,7 +62,7 @@ Time: 15 мин.
 
 Assignee: Юрий
 
-Effort (plan): 41h
+Effort (plan): 43h
 Effort (slides): 7h
 
 ## Атаки (exploits)
@@ -111,6 +118,12 @@ Heap overflow атаки:
 
 Некоторые указанные ниже методы можно детектировать в уже собранном приложении (или библиотеке)
 с помощью утилиты `checksec` (но не все).
+
+Статьи:
+  - https://www.forrest-orr.net/post/a-modern-exploration-of-windows-memory-corruption-exploits-part-i-stack-overflows
+  - история атак на стек: https://www.jerkeby.se/newsletter/posts/history-of-rop/
+  - история атак: https://vvdveen.com/publications/RAID2012.pdf
+  - примеры атак: https://guyinatuxedo.github.io (low prio)
 
 ## Неисполняемый стек
 
@@ -211,20 +224,23 @@ Heap overflow атаки:
 - эквивалентные отладочные проверки:
   * Asan (и до некоторой степени Valgrind, за исключением stack overflow) обнаруживают причину подобных ошибок (buffer overflow)
 - проблемы:
-  * рандомизируется только базовый адрес приложения
-    * хакер знает относительные смещения кода, глобальных переменных, таблиц GOT/PLT
+  * рандомизируется только базовый адрес mmap
+    * хакер знает относительные смещения кода, глобальных переменных, таблиц GOT/PLT всех библиотек
     * если сливается адрес хотя бы одной сущности => хакер знает смещение всех остальных
     * см. про защиту GOT ниже
   * защита уязвима к info leakage
     + например [format string attach](https://en.m.wikipedia.org/wiki/Uncontrolled_format_string)
   * недостаточная рандомизация (не все биты адреса одинаково случайны, относительный порядок библиотек и программы неслучаен)
     + например в 32-битных Windows [рандомизировалось только 8 (!) битов адреса загрузки](https://cloud.google.com/blog/topics/threat-intelligence/six-facts-about-address-space-layout-randomization-on-windows/)
+      - так же в [32-битном Android](https://googleprojectzero.blogspot.com/2015/09/stagefrightened.html)
     + https://arxiv.org/abs/2408.15107
     + в Windows рандомизация каждого приложения делается однократно при его первой загрузке (для ускорения)
       - также одна и та же библиотека может грузиться по одному адресу в разных приложениях (для ускорения)
       - помогает только регулярный ребут сервера
     + даже в Linux рандомизация делается однократно при старте сервиса => уязвима к brute force (особенно на 32-битных платформах)
       - требуется регулярный рестарт сервисов
+    + использование `fork` компрометирует ASLR т.к. ребёнок знает секрет (ASLR и кстати canary)
+      - Android использует Zygote
   * ASLR убила подход предлинковки библиотек (Prelink), использовавшийся для ускорения загрузки
 - расширения:
   * некоторые коммерческие тулчейны также динамически переупорядочивают сегменты в рантайме или линк-тайме (Safe Compiler, Moving Target Defense, Multicompiler)
@@ -769,11 +785,12 @@ Heap overflow атаки:
   * false positives: неизвестны
   * false negatives:
     + некоторые программы могут сломаться (если в них были отсутствующие символы, которые не вызывались)
-    + пользовательские таблицы функций не защищены (важно ли это ?)
+    + пользовательские таблицы функций не защищены e.g. atexit handlers (важно ли это ?)
 - сравнение с безопасными языками
   * Rust [использует](https://doc.rust-lang.org/rustc/exploit-mitigations.html#read-only-relocations-and-immediate-binding) Full RELRO
 - как включить
   * указать опции линкера: `-Wl,-z,now -Wl,-z,relro`
+    + можно просто `-z now -z relro`
   * поддержка в дистрибутивах и тулчейнах:
     + Debian: не включены по умолчанию ни в GCC, ни в Clang
     + Ubuntu: включены по умолчанию в GCC, но только `-z relro` в Clang (partial RELRO)
@@ -1007,9 +1024,11 @@ Heap overflow атаки:
   * https://developers.redhat.com/blog/2014/10/16/gcc-undefined-behavior-sanitizer-ubsan
 - использование в реальных проектах
   * не используется в дистрах
-  * используется в Android media stack:
-    + https://android-developers.googleblog.com/2016/05/hardening-media-stack.html
-    + https://android-developers.googleblog.com/2018/06/compiler-based-security-mitigations-in.html
+  * используется во Android user- и kernel-space:
+    + https://android-developers.googleblog.com/2020/06/system-hardening-in-android-11.html
+    + ранее только в Android media stack:
+      - https://android-developers.googleblog.com/2016/05/hardening-media-stack.html
+      - https://android-developers.googleblog.com/2018/06/compiler-based-security-mitigations-in.html
 
 ## Отключение агрессивных оптимизаций
 
@@ -1115,6 +1134,7 @@ Heap overflow атаки:
   - LLVM CFI (2015, Clang 3.7)
   - Microsoft Control Flow Guard, 2014 (https://learn.microsoft.com/en-us/windows/win32/secbp/control-flow-guard)
   - Intel CET, 2020 (спека 2016)
+  - grsecurity RAP (https://grsecurity.net/rap_faq)
 - LLVM CFI:
   * компиляторная инструментация
   * не поддержана в GCC
@@ -1216,13 +1236,6 @@ Heap overflow атаки:
   * stack scrubbing - очистка стека при выходе из функции (`-fstrub`)
   * [`-fzero-call-used-regs`](https://www.semanticscholar.org/paper/Clean-the-Scratch-Registers%3A-A-Way-to-Mitigate-Rong-Xie/6f2ce4fd31baa0f6c02f9eb5c57b90d39fe5fa13) - очистка регистров при выходе из функции
 - HW-атаки (Spectre, etc.)
-
-## TODO
-
-Добавить инфу о проверках:
-  - [ARM Memory Tagging Extensions](https://web.archive.org/web/20241016154235/https://community.arm.com/arm-community-blogs/b/architectures-and-processors-blog/posts/enhanced-security-through-mte)
-  - `-fstrict-flex-arrays=3`
-  - возможные расширения: https://grsecurity.net/rap_faq
 
 # (3) Hardening под капотом на примере LLVM
 

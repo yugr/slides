@@ -60,27 +60,17 @@ TODO:
   - опции сборки критического софта:
     * браузеры, чаты и почтовые клиенты, интерпретаторы (Python, PHP), БД, pdf/image-читалки, OpenOffice, etc.
     * добавить про дефолтные опции таких пакетов в соотв. разделы
-  - можно ли заменить `-Wl,-z` на `-z` ?
   - исследовать ситуацию с `DEB_BUILD_HARDENING`
     * на Debian (включён для [уязвимых пакетов](https://wiki.debian.org/ReleaseGoals/SecurityHardeningBuildFlags) ?)
       + https://git.dpkg.org/cgit/dpkg/dpkg.git
     * на Ubuntu (включён по умолчанию ?)
-  - GWP Asan, HW Asan, A/B тестирование
   - https://patchwork.ozlabs.org/project/glibc/patch/57CDAB08.8060601@samsung.com/
   - `-fstrict-flex-arrays=3`
 
 TODO: прочитать:
-  - https://hovav.net/ucsd/talks/blackhat08.html
   - https://people.eecs.berkeley.edu/~dawnsong/papers/Oakland13-SoK-CR.pdf
-  - https://vvdveen.com/publications/RAID2012.pdf
-  - https://stackoverflow.com/questions/34616086/union-punning-structs-w-common-initial-sequence-why-does-c-99-but-not (low prio)
-  - https://android-developers.googleblog.com/2020/06/system-hardening-in-android-11.html
   - https://web.ist.utl.pt/nuno.lopes/pubs/ub-pldi25.pdf
-  - атаки:
-    * https://guyinatuxedo.github.io (low prio)
-    * https://www.forrest-orr.net/post/a-modern-exploration-of-windows-memory-corruption-exploits-part-i-stack-overflows
-    * https://www.jerkeby.se/newsletter/posts/history-of-rop/
-  - CFI:
-    * https://sipearl.com/wp-content/uploads/2023/10/SiPearl-White_Paper_Control_Flow_Integrity-on-Arm64.pdf
+  - https://hovav.net/ucsd/dist/asrandom.pdf
   - MTE:
     * https://source.android.com/docs/security/test/tagged-pointers
+    * https://web.archive.org/web/20241016154235/https://community.arm.com/arm-community-blogs/b/architectures-and-processors-blog/posts/enhanced-security-through-mte

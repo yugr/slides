@@ -63,7 +63,7 @@ Time: 15 мин.
 Assignee: Юрий
 
 Effort (plan): 43h
-Effort (slides): 7h
+Effort (slides): 8h
 
 ## Атаки (exploits)
 
@@ -1173,7 +1173,6 @@ Heap overflow атаки:
 - проблемы:
   * false positives:
     + большое количество софта надо дорабатывать для LLVM CFI (например падает Clang)
-    + TODO: в чём проблема со сборкой Clang ?
   * false negatives:
     + LLVM CFI: проверяются только несоответствия на уровне типов (хакер может вызвать неправильную функцию если типы совпадают)
     + CET: вообще не проверяет типы

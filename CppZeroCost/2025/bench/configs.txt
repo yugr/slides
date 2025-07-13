@@ -20,4 +20,5 @@ ClangIOF:clang:-fsanitize=signed-integer-overflow,pointer-overflow -fsanitize-mi
 ClangBounds:clang:-fsanitize=bounds -fsanitize-minimal-runtime:-fsanitize-minimal-runtime:
 SafeStack:clang:-fsanitize=safe-stack::
 NoCFI:clang:-flto=thin -fvisibility=hidden:-flto=thin -fvisibility=hidden:
-CFI:clang:-flto=thin -fvisibility=hidden -fsanitize=cfi:-flto=thin -fvisibility=hidden -fsanitize=cfi:
+# Clang has some CFI violations
+CFI:clang:-flto=thin -fvisibility=hidden -fsanitize=cfi -fno-sanitize=cfi-unrelated-cast -fsanitize-ignorelist=ORIGIN/cfi-ignorelist.txt:-flto=thin -fvisibility=hidden -fsanitize=cfi -fno-sanitize=cfi-unrelated-cast:

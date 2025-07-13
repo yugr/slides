@@ -11,6 +11,7 @@ OUT=./results
 REPEAT=3
 V=0
 NO_RUN=
+ORIGIN=$(readlink -f $(dirname $0))
 
 usage() {
   cat <<EOF
@@ -159,6 +160,10 @@ while read cfg; do
   cxxflags=$(echo "$cfg" | awk -F: '{print $3}')
   ldflags=$(echo "$cfg" | awk -F: '{print $4}')
   llvmflags=$(echo "$cfg" | awk -F: '{print $5}')
+
+  cxxflags=$(echo "$cxxflags" | sed -e "s!ORIGIN!$ORIGIN!")
+  ldflags=$(echo "$ldflags" | sed -e "s!ORIGIN!$ORIGIN!")
+  llvmflags=$(echo "$llvmflags" | sed -e "s!ORIGIN!$ORIGIN!")
 
   case $cc in
     gcc)

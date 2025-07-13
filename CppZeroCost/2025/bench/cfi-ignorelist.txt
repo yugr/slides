@@ -1,0 +1,5 @@
+# llvm/utils/TableGen/Common/GlobalISel/GlobalISelMatchTable.cpp
+src:*GlobalISelMatchTable.cpp
+
+# static_cast to unrelated type in clang/include/clang/AST/Redeclarable.h
+src:*Redeclarable.h

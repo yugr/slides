@@ -1,0 +1,76 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:140.0) Gecko/20100101 Firefox/140.0" version="28.0.6">
+  <diagram name="Page-1" id="iWaEXGlZEz6ndNVDSOyo">
+    <mxGraphModel dx="1042" dy="535" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" background="none" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="Id8ArkJoutXKA3B86EyR-2" value="Return address" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;gradientColor=#ea6b66;" vertex="1" parent="1">
+          <mxGeometry x="120" y="270" width="120" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="Id8ArkJoutXKA3B86EyR-3" value="Buffer" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffcd28;strokeColor=#d79b00;gradientColor=#ffa500;" vertex="1" parent="1">
+          <mxGeometry x="120" y="390" width="120" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="Id8ArkJoutXKA3B86EyR-4" value="..." style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="120" y="110" width="120" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="Id8ArkJoutXKA3B86EyR-5" value="Local vars" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;gradientColor=#97d077;" vertex="1" parent="1">
+          <mxGeometry x="120" y="310" width="120" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="Id8ArkJoutXKA3B86EyR-6" value="" style="shape=curlyBracket;whiteSpace=wrap;html=1;rounded=1;labelPosition=left;verticalLabelPosition=middle;align=right;verticalAlign=middle;direction=west;" vertex="1" parent="1">
+          <mxGeometry x="240" y="110" width="20" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="Id8ArkJoutXKA3B86EyR-10" value="Other frames" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="270" y="175" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="Id8ArkJoutXKA3B86EyR-11" value="" style="shape=curlyBracket;whiteSpace=wrap;html=1;rounded=1;labelPosition=left;verticalLabelPosition=middle;align=right;verticalAlign=middle;direction=west;" vertex="1" parent="1">
+          <mxGeometry x="240" y="270" width="20" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="Id8ArkJoutXKA3B86EyR-12" value="Current frame" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="276" y="335" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="Id8ArkJoutXKA3B86EyR-13" value="Return address" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffcd28;strokeColor=#d79b00;gradientColor=#ffa500;" vertex="1" parent="1">
+          <mxGeometry x="482" y="270" width="120" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="Id8ArkJoutXKA3B86EyR-14" value="Buffer" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffcd28;strokeColor=#d79b00;gradientColor=#ffa500;" vertex="1" parent="1">
+          <mxGeometry x="482" y="390" width="120" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="Id8ArkJoutXKA3B86EyR-15" value="&lt;div align=&quot;left&quot;&gt;&lt;font face=&quot;Courier New&quot;&gt;&amp;nbsp; push &quot;/bin/sh&quot;&lt;/font&gt;&lt;/div&gt;&lt;div align=&quot;left&quot;&gt;&lt;font face=&quot;Courier New&quot;&gt;&amp;nbsp; jump execve&lt;/font&gt;&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffcd28;strokeColor=#d79b00;align=left;gradientColor=#ffa500;" vertex="1" parent="1">
+          <mxGeometry x="482" y="160" width="120" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="Id8ArkJoutXKA3B86EyR-16" value="Local vars" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffcd28;strokeColor=#d79b00;gradientColor=#ffa500;" vertex="1" parent="1">
+          <mxGeometry x="482" y="310" width="120" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="Id8ArkJoutXKA3B86EyR-21" value="Stack" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="150" y="60" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="Id8ArkJoutXKA3B86EyR-22" value="Stack" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="512" y="60" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="Id8ArkJoutXKA3B86EyR-23" value="..." style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="482" y="110" width="120" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="Id8ArkJoutXKA3B86EyR-26" value="&lt;font face=&quot;Courier New&quot;&gt;strcpy(buffer, shellcode)&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="336" y="270" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="Id8ArkJoutXKA3B86EyR-27" value="" style="shape=flexArrow;endArrow=classic;html=1;rounded=0;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="310" y="254" as="sourcePoint" />
+            <mxPoint x="430" y="254" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Id8ArkJoutXKA3B86EyR-28" value="" style="curved=1;endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=1.008;entryY=0.118;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" source="Id8ArkJoutXKA3B86EyR-13" target="Id8ArkJoutXKA3B86EyR-15">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="650" y="290" as="sourcePoint" />
+            <mxPoint x="700" y="240" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="650" y="240" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Id8ArkJoutXKA3B86EyR-29" value="Return address redirected to shellcode on stack" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="640" y="220" width="60" height="30" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -63,7 +63,7 @@ Time: 15 мин.
 Assignee: Юрий
 
 Effort (plan): 43h
-Effort (slides): 8h
+Effort (slides): 10h
 
 ## Атаки (exploits)
 

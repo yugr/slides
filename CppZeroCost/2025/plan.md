@@ -32,7 +32,7 @@ Assignee: Роман
     + STL checks (`_GLIBCXX_ASSERTIONS`): 3.5%
     + Asan: 4.7x
 
-TODO:
+TODO(Роман):
   - в расширенном смысле харденинг - интегральная активность: правила безопасной разработки + ограничения на деплой + проверки в рантайме (в компиляторе, библиотеках, ядре ОС) + настройки ОС
     * правила безопасной разработки (и тестирования):
       + пример интегрального подхода: [Linux Hardening Guide](https://madaidans-insecurities.github.io/guides/linux-hardening.html)
@@ -63,7 +63,7 @@ Time: 15 мин.
 Assignee: Юрий
 
 Effort (plan): 43h
-Effort (slides): 12h
+Effort (slides): 13h
 
 ## Атаки (exploits)
 
@@ -87,7 +87,6 @@ Heap overflow атаки:
       (например поменять адрес malloc hook и вызвать его при следующем malloc,
       House of Force)
       + по этой причине malloc hooks были удалены из Glibc
-  - примеры атак: https://0x434b.dev/overview-of-glibc-heap-exploitation-techniques/
 
 Распространённость buffer overflow-уязвимостей:
   - ~11% CVE и 6.5% KEV в 2024
@@ -120,10 +119,11 @@ Heap overflow атаки:
 с помощью утилиты `checksec` (но не все).
 
 Статьи:
-  - https://www.forrest-orr.net/post/a-modern-exploration-of-windows-memory-corruption-exploits-part-i-stack-overflows
+  - примеры атак: https://guyinatuxedo.github.io (low prio)
+  - примеры атак на кучу: https://0x434b.dev/overview-of-glibc-heap-exploitation-techniques/
   - история атак на стек: https://www.jerkeby.se/newsletter/posts/history-of-rop/
   - история атак: https://vvdveen.com/publications/RAID2012.pdf
-  - примеры атак: https://guyinatuxedo.github.io (low prio)
+  - https://www.forrest-orr.net/post/a-modern-exploration-of-windows-memory-corruption-exploits-part-i-stack-overflows
 
 ## Неисполняемый стек
 
@@ -394,7 +394,7 @@ Heap overflow атаки:
     мы как бы перепрыгиваем guard page ?
   * идея пройти по всему фрейму с шагом 4096 перед началом работы,
     чтобы гарантированно спровоцировать SEGV
-- TODO: пример
+- TODO: пример (optional)
 - история:
   * guard page в Linux был [внедрён в 2010](https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2010-2240)
   * [серия статей Qualys](https://www.qualys.com/2017/06/19/stack-clash/stack-clash.txt) с ~10 proof of concept атаками (2017)
@@ -513,18 +513,20 @@ Heap overflow атаки:
     + нет оверхеда при компиляции CGBuiltin.cpp (68 сек.)
 - эквивалентные отладочные проверки:
   * аналогичные проверки, но намного более эффективные и медленные, делают Asan и Valgrind
-  * важно отметить что Asan [не умеет анализировать `XXX_chk`-функции](https://github.com/google/sanitizers/issues/247)
-    + из-за этого использовать Asan с `_FORTIFY_SOURCE` нельзя - можно пропустить баги
+  * важно отметить что все санитары [не умеют анализировать `XXX_chk`-функции](https://github.com/google/sanitizers/issues/247)
+    + из-за этого использовать их с `_FORTIFY_SOURCE` нельзя - можно пропустить баги в Asan или поймать false positives в Msan
     + из-за того что `_FORTIFY_SOURCE` включён по умолчанию его надо явно отключать в санитарных сборках:
       - `-U_FORTIFY_SOURCE` или `-D_FORTIFY_SOURCE=0`
     + на самом деле GCC (не Clang) вставляет доп. минимальную инструментацию в месте вызова
       для `memcpy_chk`, `memmove_chk`, `memset_chk`, но этого мало
+    + [пытались](https://patchwork.ozlabs.org/project/glibc/patch/57CDAB08.8060601@samsung.com/) поправить в Glibc (безуспешно)
 - оверхед:
   * [`_FORTIFY_SOURCE=2` gives 3% ffmpeg overhead](https://zatoichi-engineer.github.io/2017/10/06/fortify-source.html)
   * 2% на Clang (67 сек. -> 68.5 сек. на CGBuiltin.cpp, `-D_FORTIFY_SOURCE=3`)
   * без изменений на Clang (67 сек. на CGBuiltin.cpp, `-D_FORTIFY_SOURCE=2`)
 - проблемы:
-  * false positives: неизвестны
+  * false positives:
+    + ломает Msan: https://patchwork.ozlabs.org/project/glibc/patch/57CDAB08.8060601@samsung.com/
   * false negatives
     + поддержана только в Glibc (не в musl)
       - standalone реализация: https://git.2f30.org/fortify-headers/files.html
@@ -532,7 +534,6 @@ Heap overflow атаки:
     + работает только если подключены стандартные .h файлы (нет implicit declarations)
     + компилятор далеко не всегда может вывести допустимый размер указателя из контекста
       - ограничен рамками функции
-    + TODO: искать "bypassing FEATURE"
   * поддержка на разных платформах
 - сравнение с безопасными языками
   * Rust включает обязательные (и неотключаемые) проверки диапазанов
@@ -634,11 +635,13 @@ Heap overflow атаки:
 - как включить:
   * `-D_GLIBCXX_ASSERTIONS` (libstdc++, дефолт в GCC и Clang), `-D_LIBCPP_HARDENING_MODE=...` (libc++, включается в Clang по `-stdlib=libc++`), `-D_ITERATOR_DEBUG_LEVEL=1` (Visual Studio)
   * по умолчанию ни включена ни в одном дистре
-- ссылка на хорошую статью
+- TODO: ссылка на хорошую статью
 - использование в реальных проектах:
   * [Google: Chrome and server systems](https://security.googleblog.com/2024/11/retrofitting-spatial-safety-to-hundreds.html)
   * [Google Andromeda <1% with FDO and 2.5% without](https://bughunters.google.com/blog/6368559657254912/llvm-s-rfc-c-buffer-hardening-at-google)
   * включена для пакетов Fedora, не включена для пакетов Debian и Ubuntu
+    + https://bugs.launchpad.net/ubuntu/+source/gcc-12/+bug/2016042
+  * не включены в Firefox, в Chrome только `_GLIBCXX_ASSERTIONS`
 
 ## Усиленные аллокаторы
 
@@ -1033,6 +1036,7 @@ Heap overflow атаки:
   * https://developers.redhat.com/blog/2014/10/16/gcc-undefined-behavior-sanitizer-ubsan
 - использование в реальных проектах
   * не используется в дистрах
+  * не используется в Chrome и Firefox
   * используется во Android user- и kernel-space:
     + https://android-developers.googleblog.com/2020/06/system-hardening-in-android-11.html
     + ранее только в Android media stack:
@@ -1222,6 +1226,8 @@ Heap overflow атаки:
     [Fedora](https://fedoraproject.org/wiki/Changes/HardeningFlags28) и
     [Debian](https://git.dpkg.org/cgit/dpkg/dpkg.git/commit/?id=8f5aca71c1435c9913d5562b8cae68b751dff663)
   * То же для AArch64 CFI
+  * Chrome использует LLVM CFI на X86 и AArch64 CFI на AArch64 платформах
+  * Firefox не использует никакие варианты CFI
   * checksec не обнаруживает
     + LLVM CFI (непонятно как это сделать)
     + Intel CET ([checksec #302](https://github.com/slimm609/checksec/issues/302))

@@ -67,7 +67,6 @@ TODO:
     * на Debian (включён для [уязвимых пакетов](https://wiki.debian.org/ReleaseGoals/SecurityHardeningBuildFlags) ?)
       + https://git.dpkg.org/cgit/dpkg/dpkg.git
     * на Ubuntu (включён по умолчанию ?)
-  - https://patchwork.ozlabs.org/project/glibc/patch/57CDAB08.8060601@samsung.com/
   - `-fstrict-flex-arrays=3`
 
 TODO: прочитать:

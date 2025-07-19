@@ -63,7 +63,7 @@ Time: 15 мин.
 Assignee: Юрий
 
 Effort (plan): 43h
-Effort (slides): 10h
+Effort (slides): 12h
 
 ## Атаки (exploits)
 
@@ -191,7 +191,7 @@ Heap overflow атаки:
     + отключить execstack в готовой программе с помощью утилиты `execstack(8)`
 - использование в реальных проектах
   * все современные дистро стараются использовать noexecstack по умолчанию в GCC и Clang
-    + на моей Debian 13 execstack включён только у программ из пакета dpkg-query
+    + на моей Debian 12 execstack включён только у программ из пакета dpkg-query
       (`/usr/bin/lksh`, etc.):
       - `for f in /usr/bin/* /usr/sbin/*; do echo $f; readelf -l $f | grep -A2 GNU_STACK; done`
 
@@ -263,6 +263,7 @@ Heap overflow атаки:
   * много программ на Debian собраны без `-fPIE` (намного меньше на Ubuntu)
     + `for f in /usr/bin/* /usr/sbin/*; do if checksec --file=$f | grep -q 'No PIE'; then echo $f; fi; done`
     + в том числе `/usr/bin/pytho3` :(
+  * браузеры Firefox и Chrome собраны с PIE
 
 ## Stack Protector
 
@@ -327,7 +328,60 @@ Heap overflow атаки:
   * https://www.redhat.com/en/blog/security-technologies-stack-smashing-protection-stackguard
 - использование в реальных проектах
   * пакеты в Debian и Fedora (а также Ubuntu) дефолтно собираются с `-fstack-protector-strong`
-  * TODO: browsers
+  * в Chrome по дефолту включён более слабый вариант `-fstack-protector` (https://chromium.googlesource.com/chromium/src/+/c53163760d24e2f40c0365a6224ec653cf501b81/build/config/compiler/BUILD.gn#409)
+  * включён в релизной сборке Firefox (https://bugzilla.mozilla.org/show_bug.cgi?id=1503589)
+
+## Разделение стеков
+
+- aka SafeStack, aka backward-edge CFI, aka ShadowStack
+  * отличие Shadow от Safe - в Shadow на втором стеке хранятся только return addresses,
+    а в Safe тоже и безопасные локальные переменные и спиллы
+- суть проверки:
+  * основная проблема stack buffer overflow -
+    адрес возврата хранится вместе с локальными массивами
+  * мы можем разделить стек на две несвязные части:
+    + адрес возврата (и возможно скалярные переменные, адрес которых не берётся)
+    + все остальные
+  * по сути это доп. улучшение StackProtector
+  * совместима со StackProtector (он по прежнему применяется для unsafe stack для обнаружения overflow)
+  * полная защита от stack buffer overflow + дополнительная рандомизация
+    для критических данных
+- пример ошибки:
+  * тот же что для Stack Protector
+- целевые уязвимости и распространённость
+  * позволяет обнаруживать переполнение буфера перед return и соответственно ломает return-to-libc и ROP
+  * в отличие от Stack Protector также защищает от атак на указатели на функции на стеке
+  * см. статистику выше
+- история:
+  * множество различных решений, первое кажется StackShield (~2000)
+- возможные расширения: N/A
+- эквивалентные отладочные проверки: Asan
+- оверхед:
+  * [0.1% SafeStack](https://clang.llvm.org/docs/SafeStack.html)
+  * 3% на Clang (69 сек. -> 71 сек. на CGBuiltin.cpp)
+- проблемы:
+  * false positives: неизвестны
+  * false negatives:
+  * в `-fsanitize=safe-stack` нет поддержки проверок в динамических библиотеках
+    + их можно использовать, но они не будут использовать ShadowStack
+    + возможно [поддержать их несложно](https://github.com/ossf/wg-best-practices-os-developers/issues/267#issuecomment-1835359166)
+  * ShadowCallStack: только AArch64 и RISCV
+- сравнение с безопасными языками
+  * Rust [использует shadow stacks в найтли-сборке](https://doc.rust-lang.org/rustc/exploit-mitigations.html#stack-smashing-protection)
+- как включить:
+  * несколько реализаций:
+    + SafeStack (`-fsanitize=safe-stack`) - [не меняет ABI](https://fuchsia.dev/fuchsia-src/concepts/kernel/safestack#interoperation_and_abi_effects)
+    + ShadowStack (`-mshstk`) - не меняет ABI, но требует аппаратной поддержки (Intel CET)
+      - входит в расширение Intel CET (`-fcf-protection`) - см. ниже
+    + ShadowCallStack (`-fsanitize=shadow-call-stack` в GCC/Clang) - [не меняет ABI](https://fuchsia.dev/fuchsia-src/concepts/kernel/shadow_call_stack#interoperation_and_abi_effects)
+      - AArch64-only
+- ссылка на статью:
+  * https://blog.includesecurity.com/2015/11/strengths-and-weaknesses-of-llvms-safestack-buffer-overflow-protection/
+- использование в реальных проектах:
+  * не включён по умолчанию в дистрах (даже не поддержан в текущей версии GCC в них)
+  * не включён в Chrome и Firefox
+  * пока [не поддержан](https://github.com/slimm609/checksec/issues/301)
+    в checksec (можно просто искать публичный символ `__safestack_init`)
 
 ## Stack clashing (aka stack probes)
 
@@ -373,57 +427,7 @@ Heap overflow атаки:
     + на Ubuntu почти все программы защищены
     + на Debian нет, даже highly-exposed программы: bash, bzip2, curl, ffmpeg, perl, python, etc.
   * Firefox [использует](https://bugzilla.mozilla.org/show_bug.cgi?id=1852202) `-fstack-clash-protection`
-
-## Разделение стеков
-
-- aka SafeStack, aka backward-edge CFI, aka ShadowStack
-  * отличие Shadow от Safe - в Shadow на втором стеке хранятся только return addresses,
-    а в Safe тоже и безопасные локальные переменные и спиллы
-- суть проверки:
-  * основная проблема stack buffer overflow -
-    адрес возврата хранится вместе с локальными массивами
-  * мы можем разделить стек на две несвязные части:
-    + адрес возврата (и возможно скалярные переменные, адрес которых не берётся)
-    + все остальные
-  * по сути это доп. улучшение StackProtector
-  * совместима со StackProtector (он по прежнему применяется для unsafe stack для обнаружения overflow)
-  * полная защита от stack buffer overflow + дополнительная рандомизация
-    для критических данных
-- пример ошибки:
-  * тот же что для Stack Protector
-- целевые уязвимости и распространённость
-  * позволяет обнаруживать переполнение буфера перед return и соответственно ломает return-to-libc и ROP
-  * в отличие от Stack Protector также защищает от атак на указатели на функции на стеке
-  * см. статистику выше
-- история:
-  * множество различных решений, первое кажется StackShield (~2000)
-- возможные расширения: N/A
-- эквивалентные отладочные проверки: Asan
-- оверхед:
-  * [0.1% SafeStack](https://clang.llvm.org/docs/SafeStack.html)
-  * 3% на Clang (69 сек. -> 71 сек. на CGBuiltin.cpp)
-- проблемы:
-  * false positives: неизвестны
-  * false negatives:
-  * в `-fsanitize=safe-stack` нет поддержки проверок в динамических библиотеках
-    + их можно использовать, но они не будут использовать ShadowStack
-    + возможно [поддержать их несложно](https://github.com/ossf/wg-best-practices-os-developers/issues/267#issuecomment-1835359166)
-  * ShadowCallStack: только AArch64 и RISCV
-- сравнение с безопасными языками
-  * Rust [использует shadow stacks в найтли-сборке](https://doc.rust-lang.org/rustc/exploit-mitigations.html#stack-smashing-protection)
-- как включить:
-  * несколько реализаций:
-    + SafeStack (`-fsanitize=safe-stack`) - [не меняет ABI](https://fuchsia.dev/fuchsia-src/concepts/kernel/safestack#interoperation_and_abi_effects)
-    + ShadowStack (`mshstk`) - не меняет ABI, но требует аппаратной поддержки (Intel CET)
-      - входит в расширение Intel CET (`-fcf-protection`) - см. ниже
-    + ShadowCallStack (`-fsanitize=shadow-call-stack` в GCC/Clang) - [не меняет ABI](https://fuchsia.dev/fuchsia-src/concepts/kernel/shadow_call_stack#interoperation_and_abi_effects)
-      - AArch64-only
-- ссылка на статью:
-  * https://blog.includesecurity.com/2015/11/strengths-and-weaknesses-of-llvms-safestack-buffer-overflow-protection/
-- использование в реальных проектах:
-  * не включён по умолчанию в дистрах (даже не поддержан в текущей версии GCC в них)
-  * пока [не поддержан](https://github.com/slimm609/checksec/issues/301)
-    в checksec (можно просто искать публичный символ `__safestack_init`)
+    + Chrome нет
 
 ## Фортификация (`_FORTIFY_SOURCE`)
 
@@ -550,6 +554,7 @@ Heap overflow атаки:
 - использование в реальных проектах
   * Debian (и Ubuntu): пакеты дефолтно собираются с `-D_FORTIFY_SOURCE=2`
   * Fedora: пакеты с 2023 дефолтно собираются с `-D_FORTIFY_SOURCE=3`
+  * Firefox и Chrome собраны с `-D_FORTIFY_SOURCE=2`
 
 ## Проверки STL
 
@@ -803,6 +808,8 @@ Heap overflow атаки:
   * Debian: пакеты дефолтно [собираются с partial RELRO](https://wiki.debian.org/HardeningWalkthrough#Selecting_security_hardening_options)
   * Fefora: пакеты дефолтно [собираются с full RELRO](https://fedoraproject.org/wiki/Security_Features_Matrix#Built_with_RELRO))
   * Ubuntu: пакеты дефолтно собираются с full RELRO
+  * Firefox: дефолтно включён (https://github.com/mozilla-firefox/firefox/blob/9fb43aa7996146d3dc1bb3ab09f618c0b8b4bcef/build/moz.configure/flags.configure#L341)
+  * Chrome: дефолтно включён (https://chromium.googlesource.com/chromium/src/+/c53163760d24e2f40c0365a6224ec653cf501b81/build/config/compiler/BUILD.gn#523)
 
 ## Уменьшение зависимостей
 
@@ -1093,6 +1100,9 @@ Heap overflow атаки:
   * статьи John Regehr: https://blog.regehr.org/archives/213 и https://blog.regehr.org/archives/1520
 - использование в реальных проектах:
   * дефолтно не используются в дистрибутивах
+  * все три [используются](https://chromium.googlesource.com/chromium/src/+/c53163760d24e2f40c0365a6224ec653cf501b81/build/config/compiler/BUILD.gn#289)
+    в Chrome
+  * в Firefox только `-fno-strict-aliasing` (https://issues.chromium.org/issues/40342348)
   * TODO: проверить сколько пакетов используют эти флаги (как ?)
 
 ## Control-flow integrity

@@ -45,8 +45,15 @@
       + проверить по https://github.com/jvoisin/compiler-flags-distro
     * можно автоматизировать поиск с помощью https://github.com/slimm609/checksec или `scanelf -lpqe`
     * TODO:
-      + проверить важные программы в дистрах (python, bash, suids, etc.)
       + как просканировать все пакеты дистрибутива (без установки ?)
+  - опции сборки критического софта:
+    * suids, браузеры, чаты и почтовые клиенты, интерпретаторы (Python, PHP, bash), БД, pdf/image-читалки, OpenOffice, etc.
+    * браузеры:
+      + Chrome:
+        - https://chromium.googlesource.com/chromium/src/+/refs/heads/main/build/config
+        - https://chromium.googlesource.com/chromium/src/+/HEAD/docs/system_hardening_features.md
+      + Firefox:
+        - https://github.com/mozilla-firefox/firefox/blob/main/build/moz.configure
 
 Бенчмаркинг:
   - тестировалась компиляция самого тяжелого файла (`CGBuiltin.cpp`) с помощью Clang llvmorg-20.1.7 с дефолтными флагами (`-O3 -DNDEBUG`)
@@ -55,17 +62,7 @@
   - [скрипты запуска](bench)
 
 TODO:
-  - отдельный слайд про Rust
   - подсветить конфликты опций (в слайдах про недостатки)
-  - опции сборки критического софта:
-    * браузеры, чаты и почтовые клиенты, интерпретаторы (Python, PHP), БД, pdf/image-читалки, OpenOffice, etc.
-    * добавить про дефолтные опции таких пакетов в соотв. разделы
-    * браузеры:
-      + Chrome:
-        - https://chromium.googlesource.com/chromium/src/+/refs/heads/main/build/config
-        - https://chromium.googlesource.com/chromium/src/+/HEAD/docs/system_hardening_features.md
-      + Firefox:
-        - https://github.com/mozilla-firefox/firefox/blob/main/build/moz.configure/toolchain.configure
   - исследовать ситуацию с `DEB_BUILD_HARDENING`
     * на Debian (включён для [уязвимых пакетов](https://wiki.debian.org/ReleaseGoals/SecurityHardeningBuildFlags) ?)
       + https://git.dpkg.org/cgit/dpkg/dpkg.git

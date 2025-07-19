@@ -135,7 +135,7 @@ regenerate_tests() {
     objs="$files $obj"
   done < "$TESTS_CONFIG"
 
-  cmake --build "$B" -- -j$J $files
+  cmake --build "$B" -- -j$J $objs
 
   mv $files .
 }

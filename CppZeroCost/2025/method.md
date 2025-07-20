@@ -62,7 +62,7 @@
   - [скрипты запуска](bench)
 
 TODO:
-  - подсветить конфликты опций (в слайдах про недостатки)
+  - кумулятивный слайд-таблица про использование в дистрах и браузерах
   - исследовать ситуацию с `DEB_BUILD_HARDENING`
     * на Debian (включён для [уязвимых пакетов](https://wiki.debian.org/ReleaseGoals/SecurityHardeningBuildFlags) ?)
       + https://git.dpkg.org/cgit/dpkg/dpkg.git

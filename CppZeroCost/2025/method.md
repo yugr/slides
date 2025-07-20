@@ -86,10 +86,6 @@
 
 TODO:
   - добавить инфу по включению каждой защиты в Android
-  - исследовать ситуацию с `DEB_BUILD_HARDENING`
-    * на Debian (включён для [уязвимых пакетов](https://wiki.debian.org/ReleaseGoals/SecurityHardeningBuildFlags) ?)
-      + https://git.dpkg.org/cgit/dpkg/dpkg.git
-    * на Ubuntu (включён по умолчанию ?)
   - `-fstrict-flex-arrays=3`
 
 TODO: прочитать:

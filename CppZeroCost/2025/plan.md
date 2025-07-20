@@ -192,11 +192,10 @@ Heap overflow атаки:
     + отключить execstack в готовой программе с помощью утилиты `execstack(8)`
 - использование в реальных проектах
   * все современные дистро используют noexecstack по умолчанию в GCC и Clang (из-за настроек компилятора)
-    + проверено вручную
+    + проверено вручную для Ubuntu, Fedora, Debian, Android
     + на моей Debian 12 execstack включён только у `/usr/bin/vkd3d-compiler`,
       а на Debian 11 у программ из dpkg-query (`/usr/bin/lksh`, etc.):
       - `for f in /usr/bin/* /usr/sbin/*; do echo $f; readelf -l $f | grep -A2 GNU_STACK; done`
-  * TODO: Android вообще [не поддерживает](https://reviews.llvm.org/D53343) execstack
 
 ## ASLR (и -fPIE)
 
@@ -535,7 +534,7 @@ Heap overflow атаки:
   * false positives:
     + ломает Msan: https://patchwork.ozlabs.org/project/glibc/patch/57CDAB08.8060601@samsung.com/
   * false negatives
-    + поддержана только в Glibc (не в musl)
+    + поддержана только в Glibc и Bionic (не в musl)
       - standalone реализация: https://git.2f30.org/fortify-headers/files.html
     + работает только в `-O` режиме
     + работает только если подключены стандартные .h файлы (нет implicit declarations)

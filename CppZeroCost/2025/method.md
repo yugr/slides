@@ -86,6 +86,7 @@
 
 TODO:
   - добавить инфу по включению каждой защиты в Android
+  - хороший пример для autoinit
   - `-fstrict-flex-arrays=3`
 
 TODO: прочитать:

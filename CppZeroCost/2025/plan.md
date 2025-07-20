@@ -64,7 +64,7 @@ Assignee: Юрий
 
 Effort (likely 10-20% underestimated):
   * plan: 43h
-  * slides: 13h
+  * slides: 17h
 
 ## Атаки (exploits)
 

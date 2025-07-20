@@ -62,8 +62,9 @@ Time: 15 мин.
 
 Assignee: Юрий
 
-Effort (plan): 43h
-Effort (slides): 13h
+Effort (likely 10-20% underestimated):
+  * plan: 43h
+  * slides: 13h
 
 ## Атаки (exploits)
 
@@ -190,10 +191,12 @@ Heap overflow атаки:
     + опцией `-Wl,-z,noexecstack` в GCC/Clang, `/NXCOMPAT` в Visual Studio
     + отключить execstack в готовой программе с помощью утилиты `execstack(8)`
 - использование в реальных проектах
-  * все современные дистро стараются использовать noexecstack по умолчанию в GCC и Clang
-    + на моей Debian 12 execstack включён только у программ из пакета dpkg-query
-      (`/usr/bin/lksh`, etc.):
+  * все современные дистро используют noexecstack по умолчанию в GCC и Clang (из-за настроек компилятора)
+    + проверено вручную
+    + на моей Debian 12 execstack включён только у `/usr/bin/vkd3d-compiler`,
+      а на Debian 11 у программ из dpkg-query (`/usr/bin/lksh`, etc.):
       - `for f in /usr/bin/* /usr/sbin/*; do echo $f; readelf -l $f | grep -A2 GNU_STACK; done`
+  * TODO: Android вообще [не поддерживает](https://reviews.llvm.org/D53343) execstack
 
 ## ASLR (и -fPIE)
 
@@ -251,15 +254,15 @@ Heap overflow атаки:
   * Rust [также собирается с `-fPIE`](https://doc.rust-lang.org/rustc/exploit-mitigations.html#position-independent-executable)
 - как включить:
   * флаги `-fPIE -pie` (GCC, Clang), `/DYNAMICBASE` (Visual Studio)
-  * включена по умолчанию в GCC/Clang в Ubuntu/Debian
+  * включена по умолчанию в GCC/Clang в Ubuntu, Debian и Android
     + можно отключить флагом `-no-pie`
   * не включена по умолчанию в компиляторах Fedora
     + можно включить флагами `-fPIE -pie`
 - ссылки на статьи:
   * [проблемы ASLR в Windows](https://cloud.google.com/blog/topics/threat-intelligence/six-facts-about-address-space-layout-randomization-on-windows/)
 - использование в реальных проектах
-  * пакеты Fedora дефолтно собираются с `-fPIE`
-    + также Ubuntu и Debian (из-за дефолтных опций компилятора)
+  * пакеты Fedora дефолтно собираются с `-fPIE` (проверено в `redhat-rpm-config`)
+  * пакеты Ubuntu и Debian дефолтно собираются с `-fPIE` (из-за дефолтных опций компилятора)
   * много программ на Debian собраны без `-fPIE` (намного меньше на Ubuntu)
     + `for f in /usr/bin/* /usr/sbin/*; do if checksec --file=$f | grep -q 'No PIE'; then echo $f; fi; done`
     + в том числе `/usr/bin/pytho3` :(
@@ -322,12 +325,14 @@ Heap overflow атаки:
         но по дефолту [отключена](https://github.com/rust-lang/compiler-team/issues/841)
 - кaк включить:
   * флаг `-fstack-protector-strong` (GCC, Clang), `/GS` (Visual Studio)
-  * включена по умолчанию в Ubuntu GCC и больше нигде
+  * включена по умолчанию в Ubuntu GCC и больше нигде (не в Debian, Fedora, Android)
 - ссылки на статьи:
   * https://wiki.osdev.org/Stack_Smashing_Protector
   * https://www.redhat.com/en/blog/security-technologies-stack-smashing-protection-stackguard
 - использование в реальных проектах
-  * пакеты в Debian и Fedora (а также Ubuntu) дефолтно собираются с `-fstack-protector-strong`
+  * в Fedora пакеты дефолтно собираются с `-fstack-protector-strong` (проверено в `redhat-rpm-config`)
+  * в Ubuntu пакеты дефолтно собираются с `-fstack-protector-strong` (из-за настроек компилятора)
+  * в Debian пакеты дефолтно собираются с `-fstack-protector-strong` (проверено в `dpkg/scripts/Dpkg/Vendor/Debian.pm`)
   * в Chrome по дефолту включён более слабый вариант `-fstack-protector` (https://chromium.googlesource.com/chromium/src/+/c53163760d24e2f40c0365a6224ec653cf501b81/build/config/compiler/BUILD.gn#409)
   * включён в релизной сборке Firefox (https://bugzilla.mozilla.org/show_bug.cgi?id=1503589)
 
@@ -371,14 +376,13 @@ Heap overflow атаки:
 - как включить:
   * несколько реализаций:
     + SafeStack (`-fsanitize=safe-stack`) - [не меняет ABI](https://fuchsia.dev/fuchsia-src/concepts/kernel/safestack#interoperation_and_abi_effects)
-    + ShadowStack (`-mshstk`) - не меняет ABI, но требует аппаратной поддержки (Intel CET)
-      - входит в расширение Intel CET (`-fcf-protection`) - см. ниже
+    + ShadowStack - так и не понял как включить (`-mshstk` не включает его и не входит в Intel CET `-fcf-protection`)
     + ShadowCallStack (`-fsanitize=shadow-call-stack` в GCC/Clang) - [не меняет ABI](https://fuchsia.dev/fuchsia-src/concepts/kernel/shadow_call_stack#interoperation_and_abi_effects)
       - AArch64-only
 - ссылка на статью:
   * https://blog.includesecurity.com/2015/11/strengths-and-weaknesses-of-llvms-safestack-buffer-overflow-protection/
 - использование в реальных проектах:
-  * не включён по умолчанию в дистрах (даже не поддержан в текущей версии GCC в них)
+  * не включён по умолчанию в дистрах (проверено по билдскриптам, даже не поддержан в текущей версии GCC в них)
   * не включён в Chrome и Firefox
   * пока [не поддержан](https://github.com/slimm609/checksec/issues/301)
     в checksec (можно просто искать публичный символ `__safestack_init`)
@@ -420,8 +424,10 @@ Heap overflow атаки:
   * https://developers.redhat.com/blog/2019/04/30/stack-clash-mitigation-in-gcc-why-fstack-check-is-not-the-answer
   * https://developers.redhat.com/blog/2020/05/22/stack-clash-mitigation-in-gcc-part-3
 - использование в реальных проектах
-  * пакеты Fedora (и Ubuntu) дефолтно собираются с `-fstack-clash-protection`
-  * пакеты Debian [похоже нет](https://github.com/jvoisin/compiler-flags-distro/issues/12)
+  * пакеты Fedora дефолтно собираются с `-fstack-clash-protection` на x86 и amd64
+  * пакеты Ubuntu дефолтно собираются с `-fstack-clash-protection` (из-за настроек компилятора)
+  * пакеты Debian 12 дефолтно нет (проверено в `dpkg_1.21`),
+    но [будут включены в след. версии](https://github.com/jvoisin/compiler-flags-distro/issues/12)
   * checksec сейчас [не обнаруживает stack clash](https://github.com/slimm609/checksec/issues/300)
     + пришлось написать [свой скрипт](scripts/has_stack_clash_protection.py)
     + на Ubuntu почти все программы защищены
@@ -553,8 +559,8 @@ Heap overflow атаки:
   * https://www.redhat.com/en/blog/security-technologies-fortifysource
   * https://maskray.me/blog/2022-11-06-fortify-source
 - использование в реальных проектах
-  * Debian (и Ubuntu): пакеты дефолтно собираются с `-D_FORTIFY_SOURCE=2`
-  * Fedora: пакеты с 2023 дефолтно собираются с `-D_FORTIFY_SOURCE=3`
+  * Debian (и Ubuntu): пакеты дефолтно собираются с `-D_FORTIFY_SOURCE=2` (проверено в `dpkg`)
+  * Fedora: пакеты с 2023 дефолтно собираются с `-D_FORTIFY_SOURCE=3` (проверено в `redhat-rpm-config`)
   * Firefox и Chrome собраны с `-D_FORTIFY_SOURCE=2`
 
 ## Проверки STL
@@ -731,7 +737,7 @@ Heap overflow атаки:
   * https://www.l3harris.com/newsroom/editorial/2023/10/scudo-hardened-allocator-unofficial-internals-documentation
   * https://github.com/struct/isoalloc/blob/master/SECURITY_COMPARISON.MD
 - использование в реальных проектах:
-  * Android использует Scudo по дефолту
+  * Android использует Scudo по дефолту, остальные дистры Glibc allocator
   * Chrome [использует](https://blog.chromium.org/2021/04/efficient-and-safe-allocations-everywhere.html)
     hardened-аллокатор PartitionAlloc
   * Firefox [использует](https://madaidans-insecurities.github.io/firefox-chromium.html#memory-allocator-hardening)
@@ -809,8 +815,11 @@ Heap overflow атаки:
   * https://www.redhat.com/en/blog/hardening-elf-binaries-using-relocation-read-only-relro
 - использование в реальных проектах
   * Debian: пакеты дефолтно [собираются с partial RELRO](https://wiki.debian.org/HardeningWalkthrough#Selecting_security_hardening_options)
+    + проверено в `dpkg`
   * Fefora: пакеты дефолтно [собираются с full RELRO](https://fedoraproject.org/wiki/Security_Features_Matrix#Built_with_RELRO))
-  * Ubuntu: пакеты дефолтно собираются с full RELRO
+    + проверено в `redhat-rpm-config`
+  * Ubuntu: пакеты дефолтно собираются с full RELRO (из-за настроек компилятора)
+    + отключено в `dpkg` !
   * Firefox: дефолтно включён (https://github.com/mozilla-firefox/firefox/blob/9fb43aa7996146d3dc1bb3ab09f618c0b8b4bcef/build/moz.configure/flags.configure#L341)
   * Chrome: дефолтно включён (https://chromium.googlesource.com/chromium/src/+/c53163760d24e2f40c0365a6224ec653cf501b81/build/config/compiler/BUILD.gn#523)
 
@@ -1221,11 +1230,15 @@ Heap overflow атаки:
   * AArch64 CFI: https://lists.debian.org/debian-dpkg/2022/05/msg00022.html
 - использование в реальных проектах (дистрах, браузерах и т.д.)
   * включена по дефолту на Android
-  * `-fsanitize=cfi` не включена в Ubuntu, Debian, Fedora (логично, ведь GCC её не поддерживает и она требует LTO)
-  * Intel CET дефолтно включён для пакетов в [Ubuntu](https://wiki.ubuntu.com/ToolChain/CompilerFlags),
-    [Fedora](https://fedoraproject.org/wiki/Changes/HardeningFlags28) и
-    [Debian](https://git.dpkg.org/cgit/dpkg/dpkg.git/commit/?id=8f5aca71c1435c9913d5562b8cae68b751dff663)
-  * То же для AArch64 CFI
+  * `-fsanitize=cfi` не включена в Ubuntu, Debian, Fedora
+    + логично, ведь GCC её не поддерживает и она требует LTO
+  * Intel CET и AArch64 BP дефолтно включены для пакетов в [Ubuntu](https://wiki.ubuntu.com/ToolChain/CompilerFlags)
+    + проверено по `dpkg_1.22.6ubuntu6.2`
+  * Intel CET и AArch64 BP дефолтно включены для пакетов в [Fedora](https://fedoraproject.org/wiki/Changes/HardeningFlags28)
+    + проверено по `redhat-rpm-config`
+  * Intel CET и AArch64 BP не включены для пакетов в Debian 12 (проверено в `dpkg_1.21.22`)
+    + будут включeны в след. версиях
+      (проверено по `dpkg` + [коммит](https://git.dpkg.org/cgit/dpkg/dpkg.git/commit/?id=8f5aca71c1435c9913d5562b8cae68b751dff663))
   * Chrome использует LLVM CFI на X86 и AArch64 CFI на AArch64 платформах
   * Firefox не использует никакие варианты CFI
   * checksec не обнаруживает
@@ -1238,6 +1251,7 @@ Heap overflow атаки:
 - включает [все опции, рекомендованные OpenSSF](https://best.openssf.org/Compiler-Hardening-Guides/Compiler-Options-Hardening-Guide-for-C-and-C++.html)
 - хороший дефолтный флаг, но пока реализован только в GCC
   * [Clang issue](https://github.com/llvm/llvm-project/issues/122687)
+  * не используется ни в одном дистро
   * семантика может зависеть от версии компилятора
     + для GCC можно посмотреть функцию `print_help_hardened`, сейчас
       ```

@@ -3,14 +3,37 @@
 Все утверждения ниже даны для последних версий дистров:
   - Debian 12 (bookworm)
     * [Debian](https://wiki.debian.org/HardeningWalkthrough#Selecting_security_hardening_options)
-    * пакетные флаги можно посмотреть, вызвав `dpkg-buildflags(1)`
+    * дефолтные флаги пакетов берутся из [dpkg-dev](https://packages.debian.org/bookworm/dpkg-dev)
+      + [git](https://salsa.debian.org/dpkg-team/dpkg)
+      + пакетные флаги можно посмотреть, вызвав `dpkg-buildflags(1)`
+      + по умолчанию пакеты собираются с hardened-опциями:
+        ```
+        commit e49be6015dcdcc3ef62ab6bbf58de5053e7dd8ad
+        Author: Guillem Jover <guillem@debian.org>
+        Date:   Mon Mar 28 00:46:36 2016 +0200
+
+        debian: Enable all hardening flags
+
+        Starting with gcc-5 there is no performance loss when enabling PIE on
+        i386, so there is no point in not enabling it.
+
+        +       DEB_BUILD_MAINT_OPTIONS="hardening=+all,$(hardening_old)" \
+        ```
   - Ubuntu 24.04 (noble)
     * [Ubuntu](https://wiki.ubuntu.com/Security/Features)
-    * [дефолтные компиляторные флаги](https://wiki.ubuntu.com/ToolChain/CompilerFlags)
+    * дефолтные флаги пакетов берутся из [dpkg-dev](https://launchpad.net/ubuntu/noble/+package/dpkg-dev)
+      + [wiki](https://wiki.ubuntu.com/ToolChain/CompilerFlags)
+      + [git](https://git.launchpad.net/ubuntu/+source/dpkg)
+      + по умолчанию пакеты собираются с hardened-опциями (унаследовано от Debian)
   - Fedora 42
     * [Fedora](https://fedoraproject.org/wiki/Security_Features_Matrix)
-    * пакетные флаги: https://rpmfind.net/linux/rpm2html/search.php?query=redhat-rpm-config
-      + [Changes/Harden All Packages](https://fedoraproject.org/wiki/Changes/Harden_All_Packages)
+    * дефолтные флаги пакетов берутся из [redhat-rpm-config](https://src.fedoraproject.org/rpms/redhat-rpm-config)
+      (коммит 0ec772ce для Fedora 42)
+      + по умолчанию пакеты [собираются](https://fedoraproject.org/wiki/Changes/Harden_All_Packages) с hardened-опциями:
+        ```
+        %_hardened_build       1
+        ```
+        в `macros`
   - TODO: RedHat, OpenSUSE, BSDs ?
 
 Сравнение с другими языками:
@@ -50,10 +73,10 @@
     * suids, браузеры, чаты и почтовые клиенты, интерпретаторы (Python, PHP, bash), БД, pdf/image-читалки, OpenOffice, etc.
     * браузеры:
       + Chrome:
-        - https://chromium.googlesource.com/chromium/src/+/refs/heads/main/build/config
+        - https://chromium.googlesource.com/chromium/src/+/refs/heads/main/build/config (d0273f3d)
         - https://chromium.googlesource.com/chromium/src/+/HEAD/docs/system_hardening_features.md
       + Firefox:
-        - https://github.com/mozilla-firefox/firefox/blob/main/build/moz.configure
+        - https://github.com/mozilla-firefox/firefox/blob/main/build/moz.configure (b0ca903b)
 
 Бенчмаркинг:
   - тестировалась компиляция самого тяжелого файла (`CGBuiltin.cpp`) с помощью Clang llvmorg-20.1.7 с дефолтными флагами (`-O3 -DNDEBUG`)
@@ -62,7 +85,7 @@
   - [скрипты запуска](bench)
 
 TODO:
-  - кумулятивный слайд-таблица про использование в дистрах и браузерах
+  - добавить инфу по включению каждой защиты в Android
   - исследовать ситуацию с `DEB_BUILD_HARDENING`
     * на Debian (включён для [уязвимых пакетов](https://wiki.debian.org/ReleaseGoals/SecurityHardeningBuildFlags) ?)
       + https://git.dpkg.org/cgit/dpkg/dpkg.git

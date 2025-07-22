@@ -1268,6 +1268,17 @@ Heap overflow атаки:
   * [`-fzero-call-used-regs`](https://www.semanticscholar.org/paper/Clean-the-Scratch-Registers%3A-A-Way-to-Mitigate-Rong-Xie/6f2ce4fd31baa0f6c02f9eb5c57b90d39fe5fa13) - очистка регистров при выходе из функции
 - HW-атаки (Spectre, etc.)
 
+## Безопасные языки (Rust)
+
+- Все Rust CVE, связанные с ошибками памяти, вызваны ошибками в unsafe code (за исключением 1 бага в компиляторе)
+  * [Memory-Safety Challenge Considered Solved? An In-Depth Study with All Rust CVEs](https://arxiv.org/pdf/2003.03296) (HUI XU et al., 2021)
+- 20% крейтов содержат unsafe-код
+  * [How Do Programmers Use Unsafe Rust?](https://dl.acm.org/doi/pdf/10.1145/3428204) (ASTRAUSKAS et al., 2020)
+- 50% популярных крейтов содержат unsafe-код
+  * [Is Rust Used Safely by Software Developers?](https://arxiv.org/pdf/2007.00752) (Evans et al., 2020)
+- Свежая статья по unsafe Rust:
+  * [Targeted Fuzzing for Unsafe Rust Code](https://arxiv.org/html/2505.02464v1)
+
 # (3) Hardening под капотом на примере LLVM
 
 Time: 10 мин.

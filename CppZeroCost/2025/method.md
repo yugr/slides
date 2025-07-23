@@ -34,12 +34,13 @@
         %_hardened_build       1
         ```
         в `macros`
-  - TODO: RedHat, OpenSUSE, BSDs ?
+  - TODO: RedHat, OpenSUSE, Gentoo
+  - TODO: Android, Windows, macOS, BSDs
 
 Сравнение с другими языками:
   - рассматриваем только статические языки (не JIT)
   - Rust
-  - TODO: Ada, Solidity ?
+  - TODO: Swift, Ada, Solidity ?
 
 Для каждой проверки нужно описать
   - суть
@@ -67,16 +68,15 @@
     * что включено для пакетов дистра и что в компиляторе (и в GCC, и в Clang)
       + проверить по https://github.com/jvoisin/compiler-flags-distro
     * можно автоматизировать поиск с помощью https://github.com/slimm609/checksec или `scanelf -lpqe`
-    * TODO:
-      + как просканировать все пакеты дистрибутива (без установки ?)
+    * TODO: как просканировать все пакеты дистрибутива (без установки ?)
   - опции сборки критического софта:
     * suids, браузеры, чаты и почтовые клиенты, интерпретаторы (Python, PHP, bash), БД, pdf/image-читалки, OpenOffice, etc.
     * браузеры:
       + Chrome:
-        - https://chromium.googlesource.com/chromium/src/+/refs/heads/main/build/config (d0273f3d)
+        - https://chromium.googlesource.com/chromium/src/+/refs/heads/main/build/config (тег `140.0.7313.1` или коммит d0273f3d)
         - https://chromium.googlesource.com/chromium/src/+/HEAD/docs/system_hardening_features.md
       + Firefox:
-        - https://github.com/mozilla-firefox/firefox/blob/main/build/moz.configure (b0ca903b)
+        - https://github.com/mozilla-firefox/firefox/blob/main/build/moz.configure (тег `FIREFOX_142_0b1_RELEASE` или коммит b0ca903b)
 
 Бенчмаркинг:
   - тестировалась компиляция самого тяжелого файла (`CGBuiltin.cpp`) с помощью Clang llvmorg-20.1.7 с дефолтными флагами (`-O3 -DNDEBUG`)
@@ -84,15 +84,8 @@
   - ОС Debian 12 (bookworm)
   - [скрипты запуска](bench)
 
-TODO:
-  - добавить инфу по включению каждой защиты в Android
-  - хороший пример для autoinit
-  - `-fstrict-flex-arrays=3`
-
 TODO: прочитать:
-  - https://people.eecs.berkeley.edu/~dawnsong/papers/Oakland13-SoK-CR.pdf
   - https://web.ist.utl.pt/nuno.lopes/pubs/ub-pldi25.pdf
-  - https://hovav.net/ucsd/dist/asrandom.pdf
   - MTE:
     * https://source.android.com/docs/security/test/tagged-pointers
     * https://web.archive.org/web/20241016154235/https://community.arm.com/arm-community-blogs/b/architectures-and-processors-blog/posts/enhanced-security-through-mte

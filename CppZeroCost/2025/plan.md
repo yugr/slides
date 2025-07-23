@@ -64,11 +64,12 @@ Assignee: Юрий
 
 Effort (likely 10-20% underestimated):
   * plan: 45h
-  * slides: 17h
+  * slides: 19h
 
 ## Атаки (exploits)
 
 Stack buffer overflow атаки (в хронологическом порядке):
+  - Morris Worm (1988)
   - stack smashing
     * Smashing The Stack For Fun And Profit (Aleph One)
     * запись шеллкода в стек и вызов через return
@@ -84,7 +85,7 @@ Stack buffer overflow атаки (в хронологическом порядк
 Heap overflow атаки:
   - более сложные и разнообразные:
     * испортить данные в несвязанном буфере (например указатели на функции или на vtable)
-    * поменять метаданные аллокатора, чтобы заставить его менять произвольные адреса
+    * поменять метаданные аллокатора, чтобы заставить его менять данные по произвольному адресу
       (например поменять адрес malloc hook и вызвать его при следующем malloc,
       House of Force)
       + по этой причине malloc hooks были удалены из Glibc

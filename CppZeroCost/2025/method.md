@@ -89,3 +89,14 @@ TODO: прочитать:
   - MTE:
     * https://source.android.com/docs/security/test/tagged-pointers
     * https://web.archive.org/web/20241016154235/https://community.arm.com/arm-community-blogs/b/architectures-and-processors-blog/posts/enhanced-security-through-mte
+
+TODO: посмотреть материалы Сергея Бронникова:
+  - https://github.com/a13xp0p0v/linux-kernel-defence-map/,
+  - https://0x1.tv/img_auth.php/f/fd/%D0%91%D0%B5%D0%B7%D0%BE%D0%BF%D0%B0%D1%81%D0%BD%D0%BE%D1%81%D1%82%D1%8C_%D0%BC%D0%B8%D0%BA%D1%80%D0%BE%D1%8F%D0%B4%D1%80%D0%B0._%D0%9D%D1%83%D0%B6%D0%BD%D1%8B_%D0%BB%D0%B8_%D0%B1%D0%B8%D0%BD%D0%B0%D1%80%D0%BD%D1%8B%D0%B5_%D0%BC%D0%B8%D1%82%D0%B8%D0%B3%D0%B0%D1%86%D0%B8%D0%B8%2C_%D0%B5%D1%81%D0%BB%D0%B8_%D1%81%D0%BB%D0%B5%D0%B4%D1%83%D0%B5%D1%88%D1%8C_%D0%BF%D1%80%D0%B8%D0%BD%D1%86%D0%B8%D0%BF%D1%83_secure-by-design%3F_%28%D0%90%D0%BD%D0%BD%D0%B0_%D0%9C%D0%B5%D0%BB%D0%B5%D1%85%D0%BE%D0%B2%D0%B0%2C_OSDAY-2024%29.pdf
+  - Тео про митигации:
+    * https://www.openbsd.org/papers/bsdtw.pdf
+    * https://www.openbsd.org/papers/ru13-deraadt/
+    * https://www.openbsd.org/papers/ven05-deraadt/
+  - OpenBSD аллокатор:
+    * https://www.openbsd.org/papers/eurobsdcon2023-otto-malloc.pdf
+    * https://www.youtube.com/watch?v=MIjUsv91rXg

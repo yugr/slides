@@ -127,6 +127,13 @@ Heap overflow атаки:
   - история атак: https://vvdveen.com/publications/RAID2012.pdf
   - https://www.forrest-orr.net/post/a-modern-exploration-of-windows-memory-corruption-exploits-part-i-stack-overflows
 
+## Методы QA
+
+- Hardening - крайняя мера, надо стараться обнаруживать ошибки на этапе QA
+- Asan: >= 2x
+- Valgrind: 20-50x (https://developers.redhat.com/blog/2021/05/05/memory-error-checking-in-c-and-c-comparing-sanitizers-and-valgrind)
+- Debug STL: 2x (personal experience)
+
 ## Неисполняемый стек
 
 - aka W^X, aka NX bit, aka Data Execution Prevention
@@ -569,7 +576,7 @@ Heap overflow атаки:
 - aka "Hardened libc++"
 - суть проверки:
   * зависят от компилятора и уровня проверки
-  * всегда включают проверки индексов в `std::vector` и `std::string`
+  * всегда включают проверки индексов в `std::vector`, `std::deque`, `std::string`
     + а также `front`, `back`, etc.
   * GCC-specific:
     + проверки на `NULL` в умных указателях

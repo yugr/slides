@@ -270,7 +270,7 @@ Heap overflow атаки:
 - использование в реальных проектах
   * пакеты Fedora дефолтно собираются с `-fPIE` (проверено в `redhat-rpm-config`)
   * пакеты Ubuntu и Debian дефолтно собираются с `-fPIE` (из-за дефолтных опций компилятора)
-    + но например python3.11 в Debian не использует PIE (https://packages.debian.org/bookworm/python3.11-minimal)
+    + но например python3.11 в Debian не использует PIE (https://packages.debian.org/bookworm/python3.11-minimal, https://bugs.launchpad.net/ubuntu/+source/python2.7/+bug/1452115)
   * много программ на Debian собраны без `-fPIE` (намного меньше на Ubuntu)
     + `for f in /usr/bin/* /usr/sbin/*; do if checksec --file=$f | grep -q 'No PIE'; then echo $f; fi; done`
     + в том числе `/usr/bin/pytho3` :(

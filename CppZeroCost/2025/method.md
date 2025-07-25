@@ -84,6 +84,8 @@
   - ОС Debian 12 (bookworm)
   - [скрипты запуска](bench)
 
+TODO: интегрировать слайды
+
 TODO: прочитать:
   - https://web.ist.utl.pt/nuno.lopes/pubs/ub-pldi25.pdf
   - MTE:

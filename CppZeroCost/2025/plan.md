@@ -64,7 +64,7 @@ Assignee: Юрий
 
 Effort (likely 10-20% underestimated):
   * plan: 45h
-  * slides: 21h
+  * slides: 24h
 
 ## Атаки (exploits)
 
@@ -343,6 +343,7 @@ Heap overflow атаки:
   * в Fedora пакеты дефолтно собираются с `-fstack-protector-strong` (проверено в `redhat-rpm-config`)
   * в Ubuntu пакеты дефолтно собираются с `-fstack-protector-strong` (из-за настроек компилятора)
   * в Debian пакеты дефолтно собираются с `-fstack-protector-strong` (проверено в `dpkg/scripts/Dpkg/Vendor/Debian.pm`)
+    + вообще всего 85% пакетов Debian 10 использовали Stack Protector (https://arxiv.org/abs/2203.06834)
   * в Chrome по дефолту включён более слабый вариант `-fstack-protector` (https://chromium.googlesource.com/chromium/src/+/c53163760d24e2f40c0365a6224ec653cf501b81/build/config/compiler/BUILD.gn#409)
   * включён в релизной сборке Firefox (https://bugzilla.mozilla.org/show_bug.cgi?id=1503589)
 

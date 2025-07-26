@@ -89,3 +89,10 @@ TODO: прочитать:
   - MTE:
     * https://source.android.com/docs/security/test/tagged-pointers
     * https://web.archive.org/web/20241016154235/https://community.arm.com/arm-community-blogs/b/architectures-and-processors-blog/posts/enhanced-security-through-mte
+
+TODO: выводы:
+  - множество методов, с разной степенью защиты и оверхеда
+  - будут использоваться всё больше (в том числе стандартизовываться в языке)
+  - что рекомендуем делать
+  - что не рекомендуем делать
+  - что ещё стоит исследовать

@@ -41,7 +41,7 @@ def error_if(cond, msg):
         error(msg)
 
 
-# TODO: moar categories from https://cwe.mitre.org/data/definitions/699.html ?
+# fmt: off
 CATEGORIES = {
     "Memory Overflow": [
         # Memory Buffer Errors: https://cwe.mitre.org/data/definitions/1218.html (only relevant)
@@ -50,6 +50,8 @@ CATEGORIES = {
         119, 121, 122, 126, 127, 680, 806,
         # Pointer Issues: https://cwe.mitre.org/data/definitions/465.html (only relevant)
         466, 468, 469, 823,
+        # Hand-picked
+        129, 131, 466, 823,
     ],
     # https://cwe.mitre.org/data/definitions/189.html (only relevant)
     "Integer Overflow": [
@@ -66,25 +68,31 @@ CATEGORIES = {
     ],
     "Heap Errors": [
         # Hand-picked
-        122, 244, 415, 416, 590, 761,
+        122, 244, 415, 416, 590, 761, 244, 401, 590, 761, 762, 763, 789
     ],
     "Uninitialized": [
         # Hand-picked (908 is too abstract but many CVEs use it)
         456, 457, 824, 908,
     ],
+    "Memory Errors": [
+        # https://cwe.mitre.org/data/definitions/1399.html
+        1399, 119, 120, 121, 122, 123, 124, 125, 126, 127, 129, 131, 134,
+        188, 198, 244, 401, 415, 416, 466, 562, 587, 590, 680, 690, 761, 786,
+        787, 788, 789, 805, 822, 823, 824, 825
+    ],
 }
+# fmt: on
 
 
 def main():
-    CATEGORIES["Memory Errors"] = list(set(CATEGORIES["Memory Overflow"]) | set(CATEGORIES["Heap Errors"]))
-
     class Formatter(
         argparse.ArgumentDefaultsHelpFormatter, argparse.RawDescriptionHelpFormatter
     ):
         pass
 
     parser = argparse.ArgumentParser(
-        description="CVE scanner", formatter_class=Formatter
+        description="KEV scanner for https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json",
+        formatter_class=Formatter,
     )
     parser.add_argument("kev_file", help="Path to known_exploited_vulnerabilities.json")
     parser.add_argument(

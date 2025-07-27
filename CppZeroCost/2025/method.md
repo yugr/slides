@@ -91,8 +91,5 @@ TODO: прочитать:
     * https://web.archive.org/web/20241016154235/https://community.arm.com/arm-community-blogs/b/architectures-and-processors-blog/posts/enhanced-security-through-mte
   - https://security.googleblog.com/2024/10/safer-with-google-advancing-memory.html
 
-TODO: выводы:
-  - множество методов, с разной степенью защиты и оверхеда
-  - будут использоваться всё больше (в том числе стандартизовываться в языке)
-
-TODO: shstk
+TODO: разобраться с shstk
+TODO(Роман): уточнить про инициализацию переменных при erroneous behavior

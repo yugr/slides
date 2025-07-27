@@ -90,6 +90,12 @@ TODO: прочитать:
     * https://source.android.com/docs/security/test/tagged-pointers
     * https://web.archive.org/web/20241016154235/https://community.arm.com/arm-community-blogs/b/architectures-and-processors-blog/posts/enhanced-security-through-mte
   - https://security.googleblog.com/2024/10/safer-with-google-advancing-memory.html
+  - https://seclab.stanford.edu/websec/chromium/chromium-security-architecture.pdf
+  - Developer Ecosystems for Software Safety
+  - Exploring Memory Safety in Critical Open Source Projects
+  - https://securitycryptographywhatever.com/2024/06/24/mdowd/
+  - The Case for Memory Safe Roadmaps
 
 TODO: разобраться с shstk
 TODO(Роман): уточнить про инициализацию переменных при erroneous behavior
+TODO: проверить флаги Rust

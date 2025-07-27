@@ -64,7 +64,7 @@ Assignee: Юрий
 
 Effort (likely 10-20% underestimated):
   * plan: 45h
-  * slides: 24h
+  * slides: 27h
 
 ## Атаки (exploits)
 
@@ -92,7 +92,8 @@ Heap overflow атаки:
 
 Распространённость buffer overflow-уязвимостей:
   - ~11% CVE и 6.5% KEV в 2024
-    * 20% из них это stack overflow (самые опасные)
+  - 80% Memory Safety CVE и 46% KEV в 2024
+  - 20% buffer overflow CVE это stack overflow (самые опасные)
   - 40% memory corruptions in exploits (!) - buffer overflow ([Google Project Zero](https://security.googleblog.com/2024/11/retrofitting-spatial-safety-to-hundreds.html))
   - [Mitre CWE Top 25 2024](https://cwe.mitre.org/top25/archive/2024/2024_cwe_top25.html): места 2, 6, 8, 20
   - [70% уязвимостей в продуктах MS - ошибки памяти](https://msrc.microsoft.com/blog/2019/07/a-proactive-approach-to-more-secure-code/)
@@ -272,7 +273,8 @@ Heap overflow атаки:
 - использование в реальных проектах
   * пакеты Fedora дефолтно собираются с `-fPIE` (проверено в `redhat-rpm-config`)
   * пакеты Ubuntu и Debian дефолтно собираются с `-fPIE` (из-за дефолтных опций компилятора)
-    + но например python3.11 в Debian не использует PIE (https://packages.debian.org/bookworm/python3.11-minimal, https://bugs.launchpad.net/ubuntu/+source/python2.7/+bug/1452115)
+    + но например python3.11 в Debian не использует PIE (https://packages.debian.org/bookworm/python3.11-minimal
+      - видимо изначально была причина в накладных расходах на i386 (https://bugs.launchpad.net/ubuntu/+source/python2.7/+bug/1452115)
   * много программ на Debian собраны без `-fPIE` (намного меньше на Ubuntu)
     + `for f in /usr/bin/* /usr/sbin/*; do if checksec --file=$f | grep -q 'No PIE'; then echo $f; fi; done`
     + в том числе `/usr/bin/pytho3` :(

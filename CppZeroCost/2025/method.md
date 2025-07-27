@@ -101,3 +101,5 @@ TODO: проверить флаги Rust
 TODO: добавить на short-слайды:
   - список убранных защит
   - Safe Coding - Google-specific
+  - какой уровень фортификации у ffmpeg?
+  - убрать историю relro

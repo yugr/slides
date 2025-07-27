@@ -36,6 +36,7 @@ TODO(Роман):
   - в расширенном смысле харденинг - интегральная активность: правила безопасной разработки + ограничения на деплой + проверки в рантайме (в компиляторе, библиотеках, ядре ОС) + настройки ОС
     * правила безопасной разработки (и тестирования):
       + пример интегрального подхода: [Linux Hardening Guide](https://madaidans-insecurities.github.io/guides/linux-hardening.html)
+      + концепция Safe Coding ([Developer Ecosystems for Software Safety](https://dl.acm.org/doi/pdf/10.1145/3651621))
       + допустимые API (запрет `gets` и `rand`, предпочтение `memset_s` и т.п., [C4996](https://learn.microsoft.com/en-us/cpp/error-messages/compiler-warnings/compiler-warning-level-3-c4996)
       + static analysis (в т.ч. обязательные варнинги помимо стандартных `-Wall -Wextra -Werror`, например `-Wformat=2 -Wconversion=2`, в Visual Studio есть спец. флаг `/sdl` для таких варнингов, контракты)
       + доп. проверки (asserts, контракты и т.п.)
@@ -129,6 +130,8 @@ Heap overflow атаки:
   - история атак на стек: https://www.jerkeby.se/newsletter/posts/history-of-rop/
   - история атак: https://vvdveen.com/publications/RAID2012.pdf
   - https://www.forrest-orr.net/post/a-modern-exploration-of-windows-memory-corruption-exploits-part-i-stack-overflows
+  - про рынок 0-days: https://securitycryptographywhatever.com/2024/06/24/mdowd/
+  - [Secure by Design: Google’s Perspective on Memory Safety](https://storage.googleapis.com/gweb-research2023-media/pubtools/7665.pdf)
 
 ## Методы QA
 

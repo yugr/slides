@@ -388,7 +388,8 @@ Heap overflow атаки:
     + возможно [поддержать их несложно](https://github.com/ossf/wg-best-practices-os-developers/issues/267#issuecomment-1835359166)
   * ShadowCallStack: только AArch64 и RISCV
 - сравнение с безопасными языками
-  * Rust [использует shadow stacks в найтли-сборке](https://doc.rust-lang.org/rustc/exploit-mitigations.html#stack-smashing-protection)
+  * Rust [использует shadow stacks в найтли-сборке](https://doc.rust-lang.org/rustc/exploit-mitigations.html#backward-edge-control-flow-protection)
+    + опции `-Z sanitizer=shadow-call-stack` или `-Z sanitizer=safestack`
 - как включить:
   * несколько реализаций:
     + SafeStack (`-fsanitize=safe-stack`) - [не меняет ABI](https://fuchsia.dev/fuchsia-src/concepts/kernel/safestack#interoperation_and_abi_effects)

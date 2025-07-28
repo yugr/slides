@@ -90,16 +90,21 @@ TODO: прочитать:
     * https://source.android.com/docs/security/test/tagged-pointers
     * https://web.archive.org/web/20241016154235/https://community.arm.com/arm-community-blogs/b/architectures-and-processors-blog/posts/enhanced-security-through-mte
   - https://security.googleblog.com (все C++-relevant статьи)
-  - https://seclab.stanford.edu/websec/chromium/chromium-security-architecture.pdf
-  - Exploring Memory Safety in Critical Open Source Projects
-  - The Case for Memory Safe Roadmaps
+  - https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2023/p2759r0.pdf
 
 TODO: разобраться с shstk
-TODO(Роман): уточнить про инициализацию переменных при erroneous behavior
-TODO: проверить флаги Rust
+TODO: посчитать сколько unsafe-кода в stdlib (отдельно в Vec и BTree)
 
-TODO: добавить на short-слайды:
-  - список убранных защит
+TODO: поправить на слайдах:
+  - список убранных защит (CFI, etc.)
   - Safe Coding - Google-specific
   - какой уровень фортификации у ffmpeg?
   - убрать историю relro
+  - упомянуть регрессии в Rust от arith. checks
+  - поправить выравнивание в hardening
+  - уточнить про инициализацию переменных при erroneous behavior (Роман)
+  - упомянуть Secure SDLC
+  - не только vtable, но и dtors
+  - Hardening vs Security (Роман)
+    * Hardening - уменьшение поверхности атаки
+    * Security - также обнаружение проникновений, обработка инцидентов, etc.

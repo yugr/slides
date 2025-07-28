@@ -91,6 +91,8 @@ TODO: прочитать:
     * https://web.archive.org/web/20241016154235/https://community.arm.com/arm-community-blogs/b/architectures-and-processors-blog/posts/enhanced-security-through-mte
   - https://security.googleblog.com (все C++-relevant статьи)
   - https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2023/p2759r0.pdf
+  - https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2025/p3651r0.pdf
+  - https://www.usenix.org/system/files/sec23fall-prepub-123-xu-jianhao.pdf
 
 TODO: разобраться с shstk
 TODO: посчитать сколько unsafe-кода в stdlib (отдельно в Vec и BTree)

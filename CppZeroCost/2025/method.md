@@ -109,4 +109,20 @@ TODO: поправить на слайдах:
   - не только vtable, но и dtors
   - Hardening vs Security (Роман)
     * Hardening - уменьшение поверхности атаки
-    * Security - также обнаружение проникновений, обработка инцидентов, etc.
+    * Security - более широкая категория (обнаружение проникновений, обработка инцидентов, etc.)
+  - упомянуть локальность стат. анализа (из https://github.com/isocpp/CppCoreGuidelines/blob/master/CppCoreGuidelines.md#pro-profiles):
+  ```
+  A "profile" is a set of deterministic and portably enforceable subset of rules (i.e., restrictions) ...
+  [that] require only local analysis and could be implemented in a compiler
+  ```
+  - другие примеры для safety profiles (из https://github.com/isocpp/CppCoreGuidelines/blob/master/CppCoreGuidelines.md#pro-profiles):
+    * narrowing promotions, negative float to unsigned
+  - упомянуть про Safe Buffers в Chrome
+  - не нужно включать `-fsanitize=undefined` (3x по сравнению с integer overflow)
+  - заменить "поставка" на "деплой"
+  - убрать прокликаные ссылки из pdf
+  - написать названия сегментов на фото с контейнерами
+  - поправить пример с erroneous behavior (Роман)
+  - формулировки на слайде с UB/EB/etc.: "новый тип поведения", "некоторые типы поведения"
+  - комментарий к примеру в секции про небезопасные оптимизации
+  - убрать (1) и (2) на слайде про недостатки ASLR

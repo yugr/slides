@@ -5,7 +5,7 @@
 # E.g. we completely ignore macros.
 #
 # You are supposed to run it in Rust compiler repo like this:
-#   $ ./unsafe-scanner.py library/core
+#   $ ./unsafe_scanner.py library/core
 
 import os
 import os.path

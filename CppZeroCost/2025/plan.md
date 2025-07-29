@@ -65,7 +65,7 @@ Assignee: Юрий
 
 Effort (likely 10-20% underestimated):
   * plan: 45h
-  * slides: 27h
+  * slides: 30h
 
 ## Атаки (exploits)
 
@@ -393,7 +393,8 @@ Heap overflow атаки:
 - как включить:
   * несколько реализаций:
     + SafeStack (`-fsanitize=safe-stack`) - [не меняет ABI](https://fuchsia.dev/fuchsia-src/concepts/kernel/safestack#interoperation_and_abi_effects)
-    + ShadowStack - так и не понял как включить (`-mshstk` не включает его и не входит в Intel CET `-fcf-protection`)
+    + ShadowStack - чисто аппаратная реализация (атрибут у бинарного файла), включается по `-fcf-protection` (`-mshstk` не нужен и не входит в Intel CET `-fcf-protection`)
+      - https://news.ycombinator.com/item?id=26061230
     + ShadowCallStack (`-fsanitize=shadow-call-stack` в GCC/Clang) - [не меняет ABI](https://fuchsia.dev/fuchsia-src/concepts/kernel/shadow_call_stack#interoperation_and_abi_effects)
       - AArch64-only
 - ссылка на статью:

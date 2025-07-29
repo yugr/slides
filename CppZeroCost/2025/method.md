@@ -42,7 +42,7 @@
   - Rust
   - TODO: Swift, Ada, Solidity ?
 
-Для каждой проверки нужно описать
+Для каждой защиты нужно описать
   - суть
   - пример ошибки
   - целевые уязвимости и распространённость (анализ CVE/KVE)
@@ -84,17 +84,15 @@
   - ОС Debian 12 (bookworm)
   - [скрипты запуска](bench)
 
+Подсчёт CVE/KEV-метрик:
+  - [скрипт](scripts/cve_scanner.py) и [тоже скрипт](scripts/kev_scanner.py)
+
 TODO: прочитать:
   - https://web.ist.utl.pt/nuno.lopes/pubs/ub-pldi25.pdf
-  - MTE:
-    * https://source.android.com/docs/security/test/tagged-pointers
-    * https://web.archive.org/web/20241016154235/https://community.arm.com/arm-community-blogs/b/architectures-and-processors-blog/posts/enhanced-security-through-mte
-  - https://security.googleblog.com (все C++-relevant статьи)
-  - https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2023/p2759r0.pdf
-  - https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2025/p3651r0.pdf
   - https://www.usenix.org/system/files/sec23fall-prepub-123-xu-jianhao.pdf
+  - Memory Tagging: A Memory Efficient Design
+  - https://security.googleblog.com (все C++-relevant статьи)
 
-TODO: разобраться с shstk
 TODO: посчитать сколько unsafe-кода в stdlib (отдельно в Vec и BTree)
 
 TODO: поправить на слайдах:
@@ -117,12 +115,21 @@ TODO: поправить на слайдах:
   ```
   - другие примеры для safety profiles (из https://github.com/isocpp/CppCoreGuidelines/blob/master/CppCoreGuidelines.md#pro-profiles):
     * narrowing promotions, negative float to unsigned
-  - упомянуть про Safe Buffers в Chrome
+  - упомянуть про Safe Buffers в Chrome (Роман)
   - не нужно включать `-fsanitize=undefined` (3x по сравнению с integer overflow)
   - заменить "поставка" на "деплой"
   - убрать прокликаные ссылки из pdf
   - написать названия сегментов на фото с контейнерами
   - поправить пример с erroneous behavior (Роман)
-  - формулировки на слайде с UB/EB/etc.: "новый тип поведения", "некоторые типы поведения"
+  - формулировки на слайде с UB/EB/etc.: "новый тип поведения", "некоторые типы поведения" (Роман)
   - комментарий к примеру в секции про небезопасные оптимизации
   - убрать (1) и (2) на слайде про недостатки ASLR
+  - выровнять hardened_malloc в таблице Rust
+  - добавь про AArch64 TBI
+  - `shstk` включается аппаратно по атрибуту бинарного файла (инструментация в компиляторе не нужна)
+  - добавить Go в список MSL
+  - указать авторов картинок
+  - убрать лишние слайды
+  - перенести мотивацию buffer overflow в начало
+  - добавить Рому в благодарности ("Роман Лебедев (Spectral::Technologies)")
+  - MSL -> Memory Safe Languages

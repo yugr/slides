@@ -2,6 +2,7 @@
 
 # Collects stats about usage of unsafe in Rust sources.
 # This script is EXTREMELY primitive and imprecise.
+# E.g. we completely ignore macros.
 #
 # You are supposed to run it in Rust compiler repo like this:
 #   $ ./unsafe-scanner.py library/core
@@ -10,33 +11,6 @@ import os
 import os.path
 import re
 import sys
-
-me = os.path.basename(__file__)
-
-
-def warn(msg):
-    """
-    Print nicely-formatted warning message.
-    """
-    sys.stderr.write(f"{me}: warning: {msg}\n")
-
-
-def error(msg):
-    """
-    Print nicely-formatted error message and exit.
-    """
-    sys.stderr.write(f"{me}: error: {msg}\n")
-    sys.exit(1)
-
-
-def warn_if(cond, msg):
-    if cond:
-        warn(msg)
-
-
-def error_if(cond, msg):
-    if cond:
-        error(msg)
 
 
 class TokType:
@@ -69,6 +43,10 @@ class Token:
         return f"'{self.text}' ({self.typ}, {self.loc})"
 
 
+class LexerError(Exception):
+    pass
+
+
 class Lexer:
     def __init__(self, filename):
         with open(filename) as f:
@@ -78,17 +56,10 @@ class Lexer:
         self.pos = 0
         self.next = None
 
-    def peek(self):
-        if self.next is not None:
-            return self.next
-
+    def _peek_impl(self):
         loc = Location(self.filename, self.pos + 1)
 
-        while True:
-            if self.pos >= len(self.lines):
-                self.next = Token(TokType.EOF, "", loc)
-                break
-
+        while self.pos < len(self.lines):
             line = self.lines[self.pos]
             # print(line)
 
@@ -98,19 +69,17 @@ class Lexer:
 
             if line.startswith("//"):
                 line = ""
-
-            if line.startswith("/*"):
-                i = 2
+            elif line.startswith("/*"):
+                start = 2
                 while True:
-                    if i >= len(line):
-                        i = 0
-                        self.pos += 1
-                        line = self.lines[self.pos]
-                        loc.line += 1
-                    if line[i:].startswith("*/"):
-                        line = line[i + 2 :]
+                    line = self.lines[self.pos]
+                    finish = line.find("*/", start)
+                    if finish != -1:
+                        line = line[finish + 2 :]
                         break
-                    i += 1
+                    start = 0
+                    self.pos += 1
+                    loc.line += 1
                 self.lines[self.pos] = line
                 continue
 
@@ -122,26 +91,27 @@ class Lexer:
                 continue
 
             # Chars
+            # TODO: byte chars: b'...'
 
             if line[0] == "'" and len(line) >= 3:
+                # TODO: \xff
+                # TODO: \\
+
                 if line[1] != "\\" and line[2] == "'":
                     self.next = Token(TokType.OTHER, line[:3], loc)
                     line = line[3:]
                     break
 
                 if line.startswith("'\\x"):  # '\x1f'
-                    error_if(
-                        len(line) < 5,
-                        f"{loc}: unable to parse hex char literal: {line}",
-                    )
+                    if len(line) < 5:
+                        raise LexerError(f"{loc}: unable to parse hex char literal: {line}")
                     self.next = Token(TokType.OTHER, line[:5], loc)
                     line = line[5:]
                     break
 
                 if line.startswith("'\\"):  # '\t'
-                    error_if(
-                        len(line) < 4, f"{loc}: unable to parse char literal: {line}"
-                    )
+                    if len(line) < 4:
+                        raise LexerError(f"{loc}: unable to parse char literal: {line}")
                     self.next = Token(TokType.OTHER, line[:4], loc)
                     line = line[4:]
                     break
@@ -149,6 +119,9 @@ class Lexer:
                 # Otherwise lifetime
 
             # Strings
+            # TODO: byte strings: b"..."
+            # TODO: raw strings
+            # TODO: Unicode escapes
 
             if line[0] == '"':
                 text = ""
@@ -184,6 +157,7 @@ class Lexer:
                 break
 
             # Identifiers and keywords
+            # TODO: lifetimes: 'id
 
             if line[0].isalpha() or line[0] == "_":
                 i = 1
@@ -203,6 +177,10 @@ class Lexer:
                 break
 
             # Integers
+            # TODO: floats
+            # TODO: typed integers: 1i32, 0usize
+            # TODO: binary and octal formats: 0b101, 0o73
+            # TODO: _ separator
 
             if line[0].isnumeric():
                 for i in range(len(line)):
@@ -221,6 +199,15 @@ class Lexer:
                 line = line[i:]
                 break
 
+            # 3-char punctuation
+
+            puncts = ["..=", "...", "<<=", ">>="]
+
+            if any(line.startswith(p) for p in puncts):
+                self.next = Token(TokType.OTHER, line[:3], loc)
+                line = line[3:]
+                break
+
             # 2-char punctuation
 
             puncts = [
@@ -237,12 +224,17 @@ class Lexer:
                 "&=",
                 "^=",
                 "|=",
+                "!=",
                 "~=",
                 "<=",
                 ">=",
                 "<<",
                 ">>",
+                "..",
+                "->",
+                "=>"
             ]
+
             if any(line.startswith(p) for p in puncts):
                 self.next = Token(TokType.OTHER, line[:2], loc)
                 line = line[2:]
@@ -267,11 +259,17 @@ class Lexer:
                 line = line[1:]
                 break
 
-            error(f"{loc}: unknown token: {line}")
+            raise LexerError(f"{loc}: unknown token: {line}")
 
         if self.pos < len(self.lines):
             self.lines[self.pos] = line
+        else:
+            self.next = Token(TokType.EOF, "", loc)
 
+    def peek(self):
+        if self.next is None:
+            self._peek_impl()
+        assert self.next is not None
         return self.next
 
     def skip(self):
@@ -349,9 +347,8 @@ def analyze(f):
                 nesting += 1
             elif tok.typ == TokType.RBRACE:
                 nesting -= 1
-            error_if(
-                tok.typ == TokType.EOF, "unexpected EOF when looking for closing '}'"
-            )
+            if tok.typ == TokType.EOF:
+                raise LexerError("unexpected EOF when looking for closing '}'")
 
     return len(non_empty_lines), len(unsafe_lines)
 
@@ -376,15 +373,20 @@ def main():
                     if is_interesting(f):
                         files.append(f)
         else:
-            error(f"unexpected path: {root}")
+            sys.stderr.write(f"unexpected path: {root}")
+            return 1
 
     total_lines = 0
     total_unsafe_lines = 0
 
-    for f in files:
-        lines, unsafe_lines = analyze(f)
-        total_lines += lines
-        total_unsafe_lines += unsafe_lines
+    try:
+        for f in files:
+            lines, unsafe_lines = analyze(f)
+            total_lines += lines
+            total_unsafe_lines += unsafe_lines
+    except LexerError as e:
+        print(e)
+        return 1
 
     print(f"{total_unsafe_lines} unsafe lines in {total_lines} lines")
 

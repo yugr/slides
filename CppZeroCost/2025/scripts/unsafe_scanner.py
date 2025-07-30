@@ -90,43 +90,61 @@ class Lexer:
                 loc.line += 1
                 continue
 
-            # Chars
-            # TODO: byte chars: b'...'
+            # Chars (normal and byte)
 
-            if line[0] == "'" and len(line) >= 3:
-                # TODO: \xff
-                # TODO: \\
-
-                if line[1] != "\\" and line[2] == "'":
-                    self.next = Token(TokType.OTHER, line[:3], loc)
-                    line = line[3:]
+            if line[0] == "'" and len(line) >= 3 or line.startswith("b'") and len(line) >= 4:
+                start = 1 if line[0] == "'" else 2
+                if line[start] != "\\" and line[start + 1] == "'":
+                    self.next = Token(TokType.OTHER, line[: start + 2], loc)
+                    line = line[start + 2 :]
                     break
 
-                if line.startswith("'\\x"):  # '\x1f'
-                    if len(line) < 5:
+                if line[start:].startswith("\\x"):  # '\x1f'
+                    if start + 4 > len(line):
                         raise LexerError(f"{loc}: unable to parse hex char literal: {line}")
-                    self.next = Token(TokType.OTHER, line[:5], loc)
-                    line = line[5:]
+                    self.next = Token(TokType.OTHER, line[:start + 4], loc)
+                    line = line[start + 4 :]
                     break
 
-                if line.startswith("'\\"):  # '\t'
-                    if len(line) < 4:
+                if line[start] == "\\":  # '\t'
+                    if start + 3 > len(line):
                         raise LexerError(f"{loc}: unable to parse char literal: {line}")
-                    self.next = Token(TokType.OTHER, line[:4], loc)
-                    line = line[4:]
+                    self.next = Token(TokType.OTHER, line[:start + 3], loc)
+                    line = line[start + 3 :]
                     break
 
                 # Otherwise lifetime
 
-            # Strings
-            # TODO: byte strings: b"..."
+            # Raw strings
+
+            m = re.match(r'^(b?r(#*)")(.*)', line)
+            if m is not None:
+                text = m[1]
+                line = m[3]
+                suffix = "\"" + m[2]
+                start_loc = Location(loc.filename, loc.line)
+                while True:
+                    finish = line.find(suffix)
+                    if finish != -1:
+                        text += line[: finish + len(suffix)]
+                        line = line[finish + len(suffix) :]
+                        break
+                    text += line
+                    self.pos += 1
+                    line = self.lines[self.pos]
+                    loc.line += 1
+
+                self.next = Token(TokType.OTHER, text, start_loc)
+                break
+
+            # Strings (normal and byte)
             # TODO: raw strings
             # TODO: Unicode escapes
 
-            if line[0] == '"':
+            if line[0] == '"' or line.startswith("b\""):
+                i = 1 if line[0] == '"' else 2
                 text = ""
                 start_loc = Location(loc.filename, loc.line)
-                i = 1
                 while True:
                     if i >= len(line):
                         self.pos += 1
@@ -136,15 +154,19 @@ class Lexer:
                         i = 0
                         continue
 
-                    if line[i] == "\\":
+                    if line[i:].startswith("\\x"):
+                        if i + 4 > len(line):
+                            raise LexerError(f"{loc}: unable to parse hex char literal: {line}")
+                        i += 4
+                    elif line[i:].startswith("\\\"") or line[i:].startswith("\\\\"):
+                        i += 2
+                    elif line[i] == "\\":
                         if i == len(line) - 1:
                             self.pos += 1
                             line = self.lines[self.pos]
                             loc.line += 1
                             text += line
                             i = 0
-                        elif i + 1 < len(line) and line[i + 1] == '"':
-                            i += 2
                         else:
                             i += 1
                     elif line[i] != '"':
@@ -178,9 +200,6 @@ class Lexer:
 
             # Integers
             # TODO: floats
-            # TODO: typed integers: 1i32, 0usize
-            # TODO: binary and octal formats: 0b101, 0o73
-            # TODO: _ separator
 
             if line[0].isnumeric():
                 for i in range(len(line)):
@@ -191,12 +210,30 @@ class Lexer:
                 self.next = Token(TokType.OTHER, line[:i], loc)
                 line = line[i:]
                 break
-            elif line.startswith("0x"):
+            elif line.startswith("0b") or line.startswith("0o") or line.startswith("0x") or line[0].isnumeric():
+                if line.startswith("0b"):
+                    digits = "01_"
+                elif line.startswith("0o"):
+                    digits = "01234567_"
+                elif line.startswith("0x"):
+                    digits = "0123456789abcdefABCDEF_"
+                else:
+                    digits = "0123456789"
+
                 for i in range(2, len(line)):
-                    if not line[i].isnumeric() and not line[i] in "abcdefABCDEF":
+                    if not line[i].isnumeric() and not line[i] in digits:
                         break
-                self.next = Token(TokType.OTHER, line[:i], loc)
+
+                text = line[:i]
                 line = line[i:]
+
+                # Type suffix ?
+                m = re.match(r"^([iu](?:size|[0-9]+))(.*)", line)
+                if m is not None:
+                    text += m[1]
+                    line = m[2]
+
+                self.next = Token(TokType.OTHER, line[:i], loc)
                 break
 
             # 3-char punctuation

@@ -1296,6 +1296,19 @@ Heap overflow атаки:
   * [Is Rust Used Safely by Software Developers?](https://arxiv.org/pdf/2007.00752) (Evans et al., 2020)
 - Свежая статья по unsafe Rust:
   * [Targeted Fuzzing for Unsafe Rust Code](https://arxiv.org/html/2505.02464v1)
+- процентное соотношение unsafe-кода:
+  * rust::core (294920bd) - 8.6% (5439/63041)
+  * SpacetimeDB (69ec8033) - 2.1% (1904/90331)
+  * bevy (de79d3f3) - 3.5% (10448/297552)
+  * meilisearch (8a0bf24e) - 0% (219/90169)
+  * nalgebra (db2d242d) - 4.4% (2066/46545)
+  * oxipng (788997c4) - 0% (1/4383)
+  * rav1e (6ee1f3a6) - 6.9% (3598/52411)
+  * ruff (b302d89d) - 0% (275/269434)
+  * tokio (9563707a) - 5.3% (2670/49929)
+  * uv (dc5b3762) - 0% (203/132677)
+  * veloren (8598d3d9) - 14.9% (46325/310550)
+  * zed (83d513ae) - 1.1% (6105/560558)
 
 # (3) Hardening под капотом на примере LLVM
 

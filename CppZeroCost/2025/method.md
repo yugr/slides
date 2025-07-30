@@ -93,8 +93,6 @@ TODO: прочитать:
   - Memory Tagging: A Memory Efficient Design
   - https://security.googleblog.com (все C++-relevant статьи)
 
-TODO: посчитать сколько unsafe-кода в stdlib (отдельно в Vec и BTree)
-
 TODO: поправить на слайдах:
   - список убранных защит (CFI, etc.)
   - Safe Coding - Google-specific
@@ -133,3 +131,4 @@ TODO: поправить на слайдах:
   - перенести мотивацию buffer overflow в начало
   - добавить Рому в благодарности ("Роман Лебедев (Spectral::Technologies)")
   - MSL -> Memory Safe Languages
+  - добавить сколько unsafe-кода в Rust stdlib::core, etc.

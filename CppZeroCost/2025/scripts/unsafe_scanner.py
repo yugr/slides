@@ -336,6 +336,9 @@ def analyze(f):
         if tok.typ != TokType.UNSAFE:
             continue
 
+        # TODO: skip tests (`#[cfg(test)]`)
+        # TODO: skip use-directives
+
         unsafe_lines.add(tok.loc.line)
 
         tok = lex.peek()

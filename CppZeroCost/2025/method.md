@@ -132,3 +132,6 @@ TODO: поправить на слайдах:
   - добавить Рому в благодарности ("Роман Лебедев (Spectral::Technologies)")
   - MSL -> Memory Safe Languages
   - добавить сколько unsafe-кода в Rust stdlib::core, etc.
+  - CFI также защищает от vptr smashing
+  - vptr smashing (vtable hijacking), atexit hijacking
+  - замечания Лизы

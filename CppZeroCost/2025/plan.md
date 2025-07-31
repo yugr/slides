@@ -56,6 +56,14 @@ TODO(Роман):
     + будущее развитие языка
   - ссылки:
     + Delivering Safe C++
+  - C++ profiles:
+    * локальный стат. анализа (из https://github.com/isocpp/CppCoreGuidelines/blob/master/CppCoreGuidelines.md#pro-profiles):
+      ```
+      A "profile" is a set of deterministic and portably enforceable subset of rules (i.e., restrictions) ...
+      [that] require only local analysis and could be implemented in a compiler
+      ```
+    * другие примеры для safety profiles (из https://github.com/isocpp/CppCoreGuidelines/blob/master/CppCoreGuidelines.md#pro-profiles):
+      + narrowing promotions, negative float to unsigned, unions
 
 # (2) Исчерпывающее перечисление: stack protector, pie, cfi, minimal ubsan, fortify, etc.
 
@@ -65,7 +73,7 @@ Assignee: Юрий
 
 Effort (likely 10-20% underestimated):
   * plan: 45h
-  * slides: 30h
+  * slides: 32h
 
 ## Атаки (exploits)
 
@@ -1027,8 +1035,9 @@ Heap overflow атаки:
 - эквивалентные отладочные проверки:
   * UBsan/Isan может использоваться и как отладочный инструмент
 - оверхед:
-  * [до 2x на SPEC](https://arxiv.org/pdf/1711.08108)
+  * [до 2x на SPEC](https://arxiv.org/pdf/1711.08108) - полный UBsan
   * 33% оверхед на Clang (69 сек. -> 92 сек. на CGBuiltin.cpp)
+  * 3x оверхед на Clang полного UBsan
 - проблемы
   - false positives:
     * Isan может выдавать ложные срабатывания
@@ -1297,7 +1306,7 @@ Heap overflow атаки:
 - Свежая статья по unsafe Rust:
   * [Targeted Fuzzing for Unsafe Rust Code](https://arxiv.org/html/2505.02464v1)
 - процентное соотношение unsafe-кода:
-  * rust::core (294920bd) - 8.6% (5439/63041)
+  * stdlib::core (294920bd) - 8.6% (5439/63041)
   * SpacetimeDB (69ec8033) - 2.1% (1904/90331)
   * bevy (de79d3f3) - 3.5% (10448/297552)
   * meilisearch (8a0bf24e) - 0% (219/90169)

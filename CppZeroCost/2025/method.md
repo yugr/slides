@@ -92,3 +92,7 @@ TODO: прочитать:
   - https://www.usenix.org/system/files/sec23fall-prepub-123-xu-jianhao.pdf
   - Memory Tagging: A Memory Efficient Design
   - https://security.googleblog.com (все C++-relevant статьи)
+
+TODO:
+  - конфликты опций (таблица)
+  - какие защиты закрывают какие уязвимости (таблица)

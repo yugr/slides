@@ -6,3 +6,5 @@
 а в [RU.pptx](RU.pptx) текущая версия слайдов.
 В директории [bench](bench) лежат скрипты для бенчмаркинга,
 в [scripts](scripts) - другие вспомогательные скрипты.
+
+Видео доклада: https://www.youtube.com/watch?v=v9FY3AiSfHE

@@ -92,7 +92,17 @@ TODO: прочитать:
   - https://www.usenix.org/system/files/sec23fall-prepub-123-xu-jianhao.pdf
   - Memory Tagging: A Memory Efficient Design
   - https://security.googleblog.com (все C++-relevant статьи)
-  - https://herbsutter.com/2024/03/11/safety-in-context/
+  - MSLs:
+    * https://herbsutter.com/2024/03/11/safety-in-context/
+    * https://www.reddit.com/r/rust/comments/g0wu9b/percentage_of_unsafe_code_per_crate_for/
+    * https://www.reddit.com/r/rust/comments/1eeui39/does_rust_really_solve_problems_that_modern_c/
+    * https://www.reddit.com/r/rust/comments/1fqfv0n/googles_shift_to_rust_programming_cuts_android/
+    * https://www.reddit.com/r/rust/comments/1g4fprb/safer_with_google_advancing_memory_safety/
+    * https://www.reddit.com/r/rust/comments/10jr559/memory_safety_convening_report_consumer_reports/
+      (report itself is [here](https://innovation.consumerreports.org/Memory-Safety-Convening-Report-.pdf))
+  - Profiles:
+    * https://www.reddit.com/r/rust/comments/17l8u4w/bjarne_stroustrups_plan_for_bringing_safety_to_c/
+    * https://www.reddit.com/r/rust/comments/10rnymj/my_reaction_to_dr_stroustrups_recent_memory/
 
 TODO:
   - конфликты опций (таблица)
